@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "707002192797",
+    "project_id": "closetbuddy27",
+    "storage_bucket": "closetbuddy27.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:707002192797:android:3f5210b89d910956b29574",
+        "android_client_info": {
+          "package_name": "com.example.closet_buddy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLTh8jr6919xTKjNvT9ExTg2-2hZnExi0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
