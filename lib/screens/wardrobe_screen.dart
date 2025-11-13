@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user.dart';
 import '../models/clothing_item.dart';
 import 'add_clothing_screen.dart';
+import '../widgets/clothing_card.dart';
+import 'edit_clothing_screen.dart';
 
 class WardrobeScreen extends StatefulWidget {
   final User user;
@@ -16,6 +18,9 @@ class WardrobeScreen extends StatefulWidget {
 
 class _WardrobeScreenState extends State<WardrobeScreen> {
   void _addNewItem(ClothingItem item) {
+    setState(() {
+      widget.user.addClothing(item);
+    });
   }
 
   @override
@@ -54,7 +59,24 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
               mainAxisSpacing: 10,
             ),
             itemCount: items.length,
-            itemBuilder: (context, index) => _buildClothingCard(items[index]),
+            itemBuilder: (context, index) => ClothingCard(
+              item: items[index], 
+              onTap: (){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditClothingScreen(
+                      user: widget.user,
+                      clothingItem: items[index],
+                      onUpdate: (updatedItem) {
+                        setState(() {
+                          widget.user.updateClothing(updatedItem);
+                        });
+                      },
+                    ),
+                  ),
+                );
+            }),
           );
         },
       ),
@@ -73,33 +95,4 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     );
   }
 
-  Widget _buildClothingCard(ClothingItem item) {
-    final isLocalImage = !item.imageUrl.startsWith('http');
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      clipBehavior: Clip.hardEdge,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: isLocalImage
-                ? Image.file(File(item.imageUrl), width: double.infinity, fit: BoxFit.cover)
-                : Image.network(item.imageUrl, width: double.infinity, fit: BoxFit.cover),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(item.category, style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
