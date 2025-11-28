@@ -1,61 +1,60 @@
 import 'package:flutter/material.dart';
-import 'models/user.dart';
-import 'models/clothing_item.dart';
-import 'screens/wardrobe_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:firebase_app_check/firebase_app_check.dart'; // <-- ajouté
+
+import 'screens/auth_screen.dart';
+import 'screens/wardrobe_screen.dart';
+import 'models/user.dart';
 import 'firebase_options.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // nécessaire pour init asynchrone
-  await Firebase.initializeApp( );
-
-  final user = User(
-    id: 'user1',
-    name: 'Serena',
-    email: 'serena.@example.com',
-    password: 'securepassword',
-    wardrobe: [
-      ClothingItem(
-        id: 'item1',
-        name: 'Blue T-Shirt',
-        category: 'top',
-        imageUrl: 'https://example.com/images/blue_tshirt.png',
-        color: 'blue',
-        occasion: 'casual',
-      ),
-      ClothingItem(
-        id: 'item2',
-        name: 'Black Jeans',
-        category: 'bottom',
-        imageUrl: 'https://example.com/images/black_jeans.png',
-        color: 'black',
-        occasion: 'casual',
-      ),
-      ClothingItem(
-        id: 'item3',
-        name: 'White Sneakers',
-        category: 'shoes',
-        imageUrl: 'https://example.com/images/white_sneakers.png',
-        color: 'white',
-        occasion: 'casual',
-      ),
-    ],
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(MyApp(user: user));
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug,
+    appleProvider: AppleProvider.debug,
+  );
+
+  runApp(const ClosetBuddyApp());
 }
 
-class MyApp extends StatelessWidget {
-  final User user;
-  
-  const MyApp({super.key, required this.user});
+class ClosetBuddyApp extends StatelessWidget {
+  const ClosetBuddyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Ma Garde-robe',
+      title: 'Closet Buddy',
       theme: ThemeData.dark(),
-      home: WardrobeScreen(user: user),
+      debugShowCheckedModeBanner: false,
+      home: StreamBuilder<fb_auth.User?>(
+        stream: fb_auth.FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData && snapshot.data != null) {
+            final fbUser = snapshot.data!;
+            final localUser = User(
+              id: fbUser.uid,
+              name: fbUser.displayName != null && fbUser.displayName!.isNotEmpty
+                    ? fbUser.displayName!
+                    : fbUser.email?.split('@')[0] ?? 'Utilisateur',
+              email: fbUser.email ?? '',
+              password: '',
+              wardrobe: [],
+            );
+            return WardrobeScreen(user: localUser);
+          }
+          return const AuthScreen();
+        },
+      ),
     );
   }
 }

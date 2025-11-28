@@ -13,22 +13,25 @@ class EditClothingScreen extends StatefulWidget {
   final Function(ClothingItem) onUpdate;
 
   const EditClothingScreen({
-      super.key,
-      required this.user,
-      required this.clothingItem,
-      required this.onUpdate
+    super.key,
+    required this.user,
+    required this.clothingItem,
+    required this.onUpdate,
   });
 
   @override
-  _EditClothingScreenState createState() => _EditClothingScreenState();
+  EditClothingScreenState createState() => EditClothingScreenState();
 }
 
-class _EditClothingScreenState extends State<EditClothingScreen> {
+class EditClothingScreenState extends State<EditClothingScreen> {
   final _formKey = GlobalKey<FormState>();
+
   late String _name;
   late String _category;
   late String _color;
-  File? _imageFile; 
+  File? _imageFile;
+
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -40,7 +43,8 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
 
     if (pickedFile != null) {
       setState(() {
@@ -50,107 +54,122 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
   }
 
   Future<void> _saveForm() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
 
-      String imageUrl = widget.clothingItem.imageUrl;
+    _formKey.currentState!.save();
 
-      if (_imageFile != null) {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('wardrobe_images')
-            .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+    setState(() => _isSaving = true);
 
-        await storageRef.putFile(_imageFile!);
-        imageUrl = await storageRef.getDownloadURL();
-      }
+    String imageUrl = widget.clothingItem.imageUrl;
 
-      final updateItem = widget.clothingItem.copyWith(
-        name: _name,
-        category: _category,
-        imageUrl: imageUrl,
-        color: _color,
-      );
+    if (_imageFile != null) {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('wardrobe_images')
+          .child('${widget.clothingItem.id}.jpg');
 
-      final snapshot = await FirebaseFirestore.instance
-          .collection('clothing_items')
-          .where('id', isEqualTo: widget.clothingItem.id)
-          .get();
+      await storageRef.putFile(_imageFile!);
+      imageUrl = await storageRef.getDownloadURL();
+    }
 
-      if (snapshot.docs.isNotEmpty) {
-        await snapshot.docs.first.reference.update({
-          'name': updateItem.name,
-          'category': updateItem.category,
-          'imageUrl': updateItem.imageUrl,
-          'color': updateItem.color,
-        });
-      }
+    final updatedItem = widget.clothingItem.copyWith(
+      name: _name,
+      category: _category,
+      color: _color,
+      imageUrl: imageUrl,
+    );
 
-      widget.onUpdate(updateItem);
-      Navigator.pop(context);
+    await FirebaseFirestore.instance
+        .collection('clothing_items')
+        .doc(widget.clothingItem.id)
+        .update({
+      'name': updatedItem.name,
+      'category': updatedItem.category,
+      'color': updatedItem.color,
+      'imageUrl': updatedItem.imageUrl,
+    });
+
+    widget.onUpdate(updatedItem);
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Modifier un vêtement')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          child: ListView(
-            children: [
-              TextFormField(
-                initialValue: _name,
-                decoration: const InputDecoration(labelText: 'Nom'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Veuillez entrer un nom';
-                  }
-                  return null;
-                },
-                onSaved: (value) {
-                  _name = value!;
-                },
+      body: _isSaving
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  children: [
+                    TextFormField(
+                      initialValue: _name,
+                      decoration: const InputDecoration(labelText: 'Nom'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Veuillez entrer un nom';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => _name = value!,
+                    ),
+
+                    TextFormField(
+                      initialValue: _category,
+                      decoration: const InputDecoration(labelText: 'Catégorie'),
+                      onSaved: (value) => _category = value ?? '',
+                    ),
+
+                    TextFormField(
+                      initialValue: _color,
+                      decoration: const InputDecoration(labelText: 'Couleur'),
+                      onSaved: (value) => _color = value ?? '',
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Image affichée
+                    _imageFile != null
+                        ? Image.file(
+                            _imageFile!,
+                            height: 200,
+                            fit: BoxFit.cover,
+                          )
+                        : widget.clothingItem.imageUrl.isNotEmpty
+                            ? Image.network(
+                                widget.clothingItem.imageUrl,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              )
+                            : Container(
+                                height: 150,
+                                color: Colors.grey.shade200,
+                                alignment: Alignment.center,
+                                child:
+                                    const Text('Aucune image disponible'),
+                              ),
+
+                    const SizedBox(height: 10),
+
+                    TextButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.photo),
+                      label: const Text('Choisir depuis la galerie'),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    ElevatedButton(
+                      onPressed: _saveForm,
+                      child: const Text('Mettre à jour'),
+                    ),
+                  ],
+                ),
               ),
-              TextFormField(
-                initialValue: _category,
-                decoration: const InputDecoration(labelText: 'Catégorie'),
-                onSaved: (value) => _category = value ?? '',
-              ),
-              TextFormField(
-                initialValue: _color,
-                decoration: const InputDecoration(labelText: 'Couleur'),
-                onSaved: (value) => _color = value ?? '',
-              ),
-
-              const SizedBox(height: 20),
-
-              _imageFile != null
-                  ? Image.file(
-                      _imageFile!,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    )
-                  : const Text('Aucune image sélectionnée'),
-
-              const SizedBox(height: 10),
-
-              TextButton.icon(
-                onPressed: _pickImage,
-                icon: const Icon(Icons.photo),
-                label: const Text('Choisir depuis la galerie'),
-              ),
-
-              const SizedBox(height: 20),
-
-              ElevatedButton(
-                onPressed: _saveForm,
-                child: const Text('Ajouter'),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

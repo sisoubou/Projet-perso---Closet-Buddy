@@ -18,9 +18,7 @@ class WardrobeScreen extends StatefulWidget {
 
 class _WardrobeScreenState extends State<WardrobeScreen> {
   void _addNewItem(ClothingItem item) {
-    setState(() {
-      widget.user.addClothing(item);
-    });
+    setState(() {});
   }
 
   @override
@@ -33,21 +31,27 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             .where('userId', isEqualTo: widget.user.id)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final docs = snapshot.data!.docs;
+
           final items = docs.map((d) {
             final data = d.data() as Map<String, dynamic>;
             return ClothingItem(
-              id: data['id'],
-              name: data['name'],
-              category: data['category'],
-              color: data['color'],
-              imageUrl: data['imageUrl'],
+              id: d.id,
+              name: data['name'] ?? '',
+              category: data['category'] ?? '',
+              color: data['color'] ?? '',
+              imageUrl: data['imageUrl'] ?? '',
             );
           }).toList();
 
           if (items.isEmpty) {
-            return const Center(child: Text('Aucun vêtement pour le moment 👕'));
+            return const Center(
+              child: Text('Aucun vêtement pour le moment 👕'),
+            );
           }
 
           return GridView.builder(
@@ -59,24 +63,26 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
               mainAxisSpacing: 10,
             ),
             itemCount: items.length,
-            itemBuilder: (context, index) => ClothingCard(
-              item: items[index], 
-              onTap: (){
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EditClothingScreen(
-                      user: widget.user,
-                      clothingItem: items[index],
-                      onUpdate: (updatedItem) {
-                        setState(() {
-                          widget.user.updateClothing(updatedItem);
-                        });
-                      },
+            itemBuilder: (context, index) {
+              return ClothingCard(
+                item: items[index],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditClothingScreen(
+                        user: widget.user,
+                        clothingItem: items[index],
+                        onUpdate: (updatedItem) {
+                          // Firestore va mettre à jour automatiquement
+                          setState(() {});
+                        },
+                      ),
                     ),
-                  ),
-                );
-            }),
+                  );
+                },
+              );
+            },
           );
         },
       ),
@@ -94,5 +100,4 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       ),
     );
   }
-
 }
