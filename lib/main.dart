@@ -1,22 +1,29 @@
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
-import 'package:firebase_app_check/firebase_app_check.dart'; // <-- ajouté
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'screens/auth_screen.dart';
 import 'screens/wardrobe_screen.dart';
 import 'models/user.dart';
 import 'firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
   await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-    appleProvider: AppleProvider.debug,
+    providerAndroid: kReleaseMode
+        ? const AndroidPlayIntegrityProvider()
+        : const AndroidDebugProvider(),
+    providerApple: kReleaseMode
+        ? const AppleDeviceCheckProvider()
+        : const AppleDebugProvider(),
   );
 
   runApp(const ClosetBuddyApp());
@@ -43,9 +50,9 @@ class ClosetBuddyApp extends StatelessWidget {
             final fbUser = snapshot.data!;
             final localUser = User(
               id: fbUser.uid,
-              name: fbUser.displayName != null && fbUser.displayName!.isNotEmpty
-                    ? fbUser.displayName!
-                    : fbUser.email?.split('@')[0] ?? 'Utilisateur',
+              name: (fbUser.displayName != null && fbUser.displayName!.isNotEmpty)
+                  ? fbUser.displayName!
+                  : fbUser.email?.split('@')[0] ?? 'Utilisateur',
               email: fbUser.email ?? '',
               password: '',
               wardrobe: [],
@@ -55,6 +62,6 @@ class ClosetBuddyApp extends StatelessWidget {
           return const AuthScreen();
         },
       ),
-    );
+       );
   }
 }
