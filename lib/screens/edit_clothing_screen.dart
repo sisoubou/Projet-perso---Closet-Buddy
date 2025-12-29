@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'dart:io';
 
 import '../models/user.dart';
@@ -68,8 +70,74 @@ class EditClothingScreenState extends State<EditClothingScreen> {
           .child('wardrobe_images')
           .child('${widget.clothingItem.id}.jpg');
 
-      await storageRef.putFile(_imageFile!);
-      imageUrl = await storageRef.getDownloadURL();
+      // Log current auth and App Check token presence to help diagnose failures
+      final currentUser = fb_auth.FirebaseAuth.instance.currentUser;
+      debugPrint('Current user uid: ${currentUser?.uid}');
+      final appCheckToken = await FirebaseAppCheck.instance.getToken(false);
+      final appCheckTokenPresent =
+          appCheckToken != null && appCheckToken.toString().isNotEmpty && appCheckToken.toString() != 'null';
+      debugPrint('AppCheck token present: $appCheckTokenPresent');
+
+      if (currentUser == null) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vous devez être connecté pour ajouter une image.')),
+        );
+        return;
+      }
+
+      try {
+        final TaskSnapshot snapshot = await storageRef.putFile(_imageFile!);
+        debugPrint('Upload completed: state=${snapshot.state}, bytesTransferred=${snapshot.bytesTransferred}/${snapshot.totalBytes}');
+        debugPrint('Snapshot ref fullPath: ${snapshot.ref.fullPath}');
+        debugPrint('Snapshot ref bucket: ${snapshot.ref.bucket ?? FirebaseStorage.instance.ref().bucket}');
+        try {
+          final meta = await snapshot.ref.getMetadata();
+          debugPrint('getMetadata success: fullPath=${meta.fullPath}, size=${meta.size}');
+        } on FirebaseException catch (metaErr) {
+          debugPrint('getMetadata failed: ${metaErr.code} - ${metaErr.message}');
+        } catch (metaErr) {
+          debugPrint('getMetadata unexpected error: $metaErr');
+        }
+        // Try to fetch download URL; retry briefly on object-not-found (transient)
+        try {
+          imageUrl = await snapshot.ref.getDownloadURL();
+          debugPrint('Download URL: $imageUrl');
+        } on FirebaseException catch (e) {
+          if (e.code == 'object-not-found') {
+            debugPrint('getDownloadURL returned object-not-found; retrying...');
+            bool got = false;
+            for (int i = 0; i < 5; i++) {
+              await Future.delayed(const Duration(milliseconds: 500));
+              try {
+                imageUrl = await snapshot.ref.getDownloadURL();
+                got = true;
+                debugPrint('Download URL after retry: $imageUrl');
+                break;
+              } catch (e) {
+                // ignore and retry
+              }
+            }
+            if (!got) rethrow;
+          } else {
+            rethrow;
+          }
+        }
+      } on FirebaseException catch (e) {
+        debugPrint('Storage FirebaseException: ${e.code} - ${e.message}');
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur upload image : ${e.message ?? e.code}')),
+        );
+        return;
+      } catch (e) {
+        debugPrint('Upload failed: $e');
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur upload image')),
+        );
+        return;
+      }
     }
 
     final updatedItem = widget.clothingItem.copyWith(

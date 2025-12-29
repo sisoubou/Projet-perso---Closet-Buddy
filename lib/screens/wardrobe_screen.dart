@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 
 import '../models/user.dart';
 import '../models/clothing_item.dart';
@@ -21,10 +22,44 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     setState(() {});
   }
 
+  Future<void> _confirmSignOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Se déconnecter'),
+        content: const Text('Voulez-vous vous déconnecter ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Déconnexion')),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _signOut();
+    }
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await fb_auth.FirebaseAuth.instance.signOut();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de la déconnexion : $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Garde-robe de ${widget.user.name}')),
+      appBar: AppBar(
+        title: Text('Garde-robe de ${widget.user.name}'),
+        actions: [
+          IconButton(
+            tooltip: 'Se déconnecter',
+            icon: const Icon(Icons.logout),
+            onPressed: _confirmSignOut,
+          ),
+        ],
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('clothing_items')
@@ -41,6 +76,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             final data = d.data() as Map<String, dynamic>;
             return ClothingItem(
               id: d.id,
+              userId: data['userId'] ?? '',
               name: data['name'] ?? '',
               category: data['category'] ?? '',
               color: data['color'] ?? '',

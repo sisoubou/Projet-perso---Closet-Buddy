@@ -72,11 +72,8 @@ factory ClothingItem.fromJson(String id, Map<String, dynamic> json) {
       name: json['name'] as String,
       category: json['category'] as String,
       imageUrl: json['imageUrl'] as String,
-      color: (json['color'] ?? '')      color: (json['color'] ?? '') as String,
+      color: (json['color'] ?? '') as String,
       occasion: (json['occasion'] ?? 'casual') as String,
     );
-
-
-
-
+  }
 }

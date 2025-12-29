@@ -10,6 +10,7 @@ import 'screens/wardrobe_screen.dart';
 import 'models/user.dart';
 import 'firebase_options.dart';
 
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -19,12 +20,15 @@ Future<void> main() async {
 
   await FirebaseAppCheck.instance.activate(
     providerAndroid: kReleaseMode
-        ? const AndroidPlayIntegrityProvider()
-        : const AndroidDebugProvider(),
+        ? AndroidPlayIntegrityProvider()
+        : AndroidDebugProvider(),
     providerApple: kReleaseMode
-        ? const AppleDeviceCheckProvider()
-        : const AppleDebugProvider(),
+        ? AppleDeviceCheckProvider()
+        : AppleDebugProvider(),
   );
+
+  final token = await FirebaseAppCheck.instance.getToken(true);
+  debugPrint('AppCheck token: $token');
 
   runApp(const ClosetBuddyApp());
 }
