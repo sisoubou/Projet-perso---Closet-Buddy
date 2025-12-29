@@ -10,7 +10,7 @@ class ClothingCard extends StatelessWidget{
 
   @override
   Widget build(BuildContext context) {
-    final isLocalImage = !item.imageUrl.startsWith('http');
+    final isNetworkImage = item.imageUrl.isNotEmpty && item.imageUrl.startsWith('http');
 
     return GestureDetector(
       onTap: onTap,
@@ -22,9 +22,13 @@ class ClothingCard extends StatelessWidget{
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: isLocalImage
-                  ? Image.file( File(item.imageUrl), fit: BoxFit.cover, width: double.infinity)
-                  : Image.network(item.imageUrl, fit: BoxFit.cover, width: double.infinity),
+              child: isNetworkImage
+                  ? Image.network(item.imageUrl, fit: BoxFit.cover, width: double.infinity)
+                  : Container(
+                      color: Colors.grey.shade200,
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.image, size: 40),
+                    ),
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -32,7 +36,7 @@ class ClothingCard extends StatelessWidget{
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text(item.category, style: const TextStyle(color: Colors.grey)),
+                  Text('${item.mainCategory}${item.subCategory.isNotEmpty ? ' · ${item.subCategory}' : ''}', style: const TextStyle(color: Colors.grey)),
                 ],
               )
             ),

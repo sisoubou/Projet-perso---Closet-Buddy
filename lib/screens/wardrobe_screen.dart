@@ -78,9 +78,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
               id: d.id,
               userId: data['userId'] ?? '',
               name: data['name'] ?? '',
-              category: data['category'] ?? '',
-              color: data['color'] ?? '',
+              mainCategory: data['mainCategory'] ?? '',
+              subCategory: data['subCategory'] ?? '',
               imageUrl: data['imageUrl'] ?? '',
+              color: data['color'] ?? '',
             );
           }).toList();
 

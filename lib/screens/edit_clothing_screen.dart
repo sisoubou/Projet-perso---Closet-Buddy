@@ -29,9 +29,19 @@ class EditClothingScreenState extends State<EditClothingScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late String _name;
-  late String _category;
+  late String _mainCategory;
+  late String _subCategory;
   late String _color;
   File? _imageFile;
+
+  List<String> _subCategoryOptions = [];
+  final List<String> _mainCategories = ['Haut', 'Bas', 'Chaussures', 'Accessoires'];
+  final Map<String, List<String>> _subCategoriesMap = {
+    'Haut': ['T-shirt', 'Pull', 'Chemise'],
+    'Bas': ['Jean', 'Jupe', 'Pantalon'],
+    'Chaussures': ['Baskets', 'Bottes', 'Sandales'],
+    'Accessoires': ['Ceinture', 'Sac', 'Chapeau'],
+  };
 
   bool _isSaving = false;
 
@@ -39,7 +49,9 @@ class EditClothingScreenState extends State<EditClothingScreen> {
   void initState() {
     super.initState();
     _name = widget.clothingItem.name;
-    _category = widget.clothingItem.category;
+    _mainCategory = widget.clothingItem.mainCategory;
+    _subCategory = widget.clothingItem.subCategory;
+    _subCategoryOptions = _subCategoriesMap[_mainCategory] ?? [];
     _color = widget.clothingItem.color;
   }
 
@@ -142,7 +154,8 @@ class EditClothingScreenState extends State<EditClothingScreen> {
 
     final updatedItem = widget.clothingItem.copyWith(
       name: _name,
-      category: _category,
+      mainCategory: _mainCategory,
+      subCategory: _subCategory,
       color: _color,
       imageUrl: imageUrl,
     );
@@ -152,7 +165,8 @@ class EditClothingScreenState extends State<EditClothingScreen> {
         .doc(widget.clothingItem.id)
         .update({
       'name': updatedItem.name,
-      'category': updatedItem.category,
+      'mainCategory': updatedItem.mainCategory,
+      'subCategory': updatedItem.subCategory,
       'color': updatedItem.color,
       'imageUrl': updatedItem.imageUrl,
     });
@@ -185,11 +199,28 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                       onSaved: (value) => _name = value!,
                     ),
 
-                    TextFormField(
-                      initialValue: _category,
-                      decoration: const InputDecoration(labelText: 'Catégorie'),
-                      onSaved: (value) => _category = value ?? '',
+                    DropdownButtonFormField<String>(
+                      value: _mainCategory.isEmpty ? null : _mainCategory,
+                      decoration: const InputDecoration(labelText: 'Catégorie principale'),
+                      items: _mainCategories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _mainCategory = val ?? '';
+                          _subCategoryOptions = _subCategoriesMap[_mainCategory] ?? [];
+                          _subCategory = '';
+                        });
+                      },
+                      validator: (v) => v == null || v.isEmpty ? 'Choisissez une catégorie' : null,
                     ),
+
+                    if (_subCategoryOptions.isNotEmpty)
+                      DropdownButtonFormField<String>(
+                        value: _subCategory.isEmpty ? null : _subCategory,
+                        decoration: const InputDecoration(labelText: 'Sous-catégorie'),
+                        items: _subCategoryOptions.map((sub) => DropdownMenuItem(value: sub, child: Text(sub))).toList(),
+                        onChanged: (val) => setState(() => _subCategory = val ?? ''),
+                        validator: (v) => v == null || v.isEmpty ? 'Choisissez une sous-catégorie' : null,
+                      ),
 
                     TextFormField(
                       initialValue: _color,

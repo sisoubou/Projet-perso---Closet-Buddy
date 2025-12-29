@@ -22,9 +22,18 @@ class AddClothingScreen extends StatefulWidget {
 class AddClothingScreenState extends State<AddClothingScreen> {
   final _formKey = GlobalKey<FormState>();
   String _name = '';
-  String _category = '';
+  String _mainCategory = '';
+  String _subCategory = '';
   String _color = '';
   File? _imageFile;
+  List<String> _subCategoryOptions = [];
+  final List<String> _mainCategories = ['Haut', 'Bas', 'Chaussures', 'Accessoires'];
+  final Map<String, List<String>> _subCategoriesMap = {
+    'Haut': ['T-shirt', 'Pull', 'Chemise'],
+    'Bas': ['Jean', 'Jupe', 'Pantalon'],
+    'Chaussures': ['Baskets', 'Bottes', 'Sandales'],
+    'Accessoires': ['Ceinture', 'Sac', 'Chapeau'],
+  };
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -104,7 +113,6 @@ class AddClothingScreenState extends State<AddClothingScreen> {
           debugPrint('getMetadata unexpected error: $metaErr');
         }
 
-        // Try to fetch download URL; retry briefly on object-not-found (transient)
         try {
           imageUrl = await snapshot.ref.getDownloadURL();
           debugPrint('Download URL: $imageUrl');
@@ -153,7 +161,8 @@ class AddClothingScreenState extends State<AddClothingScreen> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       userId: currentUser.uid,
       name: _name,
-      category: _category,
+      mainCategory: _mainCategory,
+      subCategory: _subCategory,
       imageUrl: imageUrl.isNotEmpty ? imageUrl : '',
       color: _color,
     );
@@ -162,7 +171,8 @@ class AddClothingScreenState extends State<AddClothingScreen> {
       await FirebaseFirestore.instance.collection('clothing_items').add({
         "id": newItem.id,
         "name": newItem.name,
-        "category": newItem.category,
+        "mainCategory": newItem.mainCategory,
+        "subCategory": newItem.subCategory,
         "imageUrl": newItem.imageUrl,
         "color": newItem.color,
         "userId": currentUser.uid,
@@ -199,14 +209,47 @@ class AddClothingScreenState extends State<AddClothingScreen> {
               ),
 
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Catégorie'),
-                onSaved: (v) => _category = v ?? '',
-              ),
-
-              TextFormField(
                 decoration: const InputDecoration(labelText: 'Couleur'),
                 onSaved: (v) => _color = v ?? '',
               ),
+
+              DropdownButtonFormField<String>(
+                initialValue: _mainCategory.isEmpty ? null : _mainCategory,
+                decoration: const InputDecoration(labelText: 'Catégorie principale'),
+                items: _mainCategories.map((cat) {
+                  return DropdownMenuItem(
+                    value: cat,
+                    child: Text(cat),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  setState(() {
+                    _mainCategory = val ?? '';
+                    _subCategoryOptions = _subCategoriesMap[_mainCategory] ?? [];
+                    _subCategory = '';
+                  });
+                },
+                validator: (v) => v == null || v.isEmpty ? 'Choisissez une catégorie' : null,
+              ),
+
+              if (_subCategoryOptions.isNotEmpty)
+                DropdownButtonFormField<String>(
+                  initialValue: _subCategory.isEmpty ? null : _subCategory,
+                  decoration: const InputDecoration(labelText: 'Sous-catégorie'),
+                  items: _subCategoryOptions.map((sub) {
+                    return DropdownMenuItem(
+                      value: sub,
+                      child: Text(sub),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _subCategory = val ?? '';
+                    });
+                  },
+                  validator: (v) => v == null || v.isEmpty ? 'Choisissez une sous-catégorie' : null,
+                ),
+
 
               const SizedBox(height: 20),
 
