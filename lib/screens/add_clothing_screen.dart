@@ -29,11 +29,27 @@ class AddClothingScreenState extends State<AddClothingScreen> {
   List<String> _subCategoryOptions = [];
   final List<String> _mainCategories = ['Haut', 'Bas', 'Chaussures', 'Accessoires'];
   final Map<String, List<String>> _subCategoriesMap = {
-    'Haut': ['T-shirt', 'Pull', 'Chemise'],
-    'Bas': ['Jean', 'Jupe', 'Pantalon'],
-    'Chaussures': ['Baskets', 'Bottes', 'Sandales'],
+    'Haut': ['T-shirt', 'Pull', 'Chemise', 'Veste'],
+    'Bas': ['Jean', 'Jupe', 'Pantalon', 'Short'],
+    'Chaussures': ['Baskets', 'Bottes', 'Sandales', 'Talons'],
     'Accessoires': ['Ceinture', 'Sac', 'Chapeau'],
   };
+  final List<String> _colorOptions = ['Rouge', 'Bleu', 'Vert', 'Noir', 'Blanc', 'Jaune', 'Violet', 'Orange', 'Rose', 'Gris', 'Marron', 'Multicoulore'];
+  final Map<String, Color> _colorMap = {
+  'Rouge': Colors.red,
+  'Bleu': Colors.blue,
+  'Vert': Colors.green,
+  'Noir': Colors.black,
+  'Blanc': Colors.white,
+  'Jaune': Colors.yellow,
+  'Violet': Colors.purple,
+  'Orange': Colors.orange,
+  'Rose': Colors.pink,
+  'Gris': Colors.grey,
+  'Marron': Colors.brown,
+  'Multicoulore': Colors.transparent,
+};
+
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -208,10 +224,35 @@ class AddClothingScreenState extends State<AddClothingScreen> {
                 onSaved: (v) => _name = v!,
               ),
 
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Couleur'),
-                onSaved: (v) => _color = v ?? '',
+              Text('Couleur', style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _colorOptions.map((colorName) {
+                  final color = _colorMap[colorName]!;
+                  final isSelected = _color == colorName;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _color = colorName;
+                      });
+                    },
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: color,
+                        border: Border.all(
+                          color: isSelected ? Colors.black : Colors.grey,
+                          width: isSelected ? 3 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
+
 
               DropdownButtonFormField<String>(
                 initialValue: _mainCategory.isEmpty ? null : _mainCategory,

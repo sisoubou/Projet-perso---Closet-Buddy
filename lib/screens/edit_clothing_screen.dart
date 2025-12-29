@@ -43,6 +43,22 @@ class EditClothingScreenState extends State<EditClothingScreen> {
     'Accessoires': ['Ceinture', 'Sac', 'Chapeau'],
   };
 
+  final List<String> _colorOptions = ['Rouge', 'Bleu', 'Vert', 'Noir', 'Blanc', 'Jaune', 'Violet', 'Orange', 'Rose', 'Gris', 'Marron', 'Multicoulore'];
+  final Map<String, Color> _colorMap = {
+    'Rouge': Colors.red,
+    'Bleu': Colors.blue,
+    'Vert': Colors.green,
+    'Noir': Colors.black,
+    'Blanc': Colors.white,
+    'Jaune': Colors.yellow,
+    'Violet': Colors.purple,
+    'Orange': Colors.orange,
+    'Rose': Colors.pink,
+    'Gris': Colors.grey,
+    'Marron': Colors.brown,
+    'Multicoulore': Colors.transparent,
+  };
+
   bool _isSaving = false;
 
   @override
@@ -222,10 +238,31 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                         validator: (v) => v == null || v.isEmpty ? 'Choisissez une sous-catégorie' : null,
                       ),
 
-                    TextFormField(
-                      initialValue: _color,
-                      decoration: const InputDecoration(labelText: 'Couleur'),
-                      onSaved: (value) => _color = value ?? '',
+                    Text('Couleur', style: TextStyle(fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: _colorOptions.map((colorName) {
+                        final color = _colorMap[colorName]!;
+                        final isSelected = _color == colorName;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() => _color = colorName);
+                          },
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: color,
+                              border: Border.all(
+                                color: isSelected ? Colors.black : Colors.grey,
+                                width: isSelected ? 3 : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
 
                     const SizedBox(height: 20),
