@@ -95,38 +95,9 @@ flutter format .
 
 ---
 
-## 🔧 Dépannage courant
-
-- Erreur d'upload Storage (ex. `object-not-found`) : le code implémente des tentatives de récupération du `getDownloadURL`; vérifiez que le bucket et les règles sont corrects.
-- Problème d'App Check : en debug, utilisez un provider debug ; en production, activez le provider approprié dans la console Firebase.
-- `21 packages have newer versions` : exécutez `flutter pub outdated` pour voir ce qui est obsolète, puis mettez à jour prudemment `pubspec.yaml` et testez.
-
----
-
 ## 📁 Structure importante
 
 - `lib/main.dart` — point d'entrée, configuration Firebase
 - `lib/screens/` — écrans (auth, garde-robe, ajout, édition)
 - `lib/models/` — modèles (`User`, `ClothingItem`)
 - `lib/widgets/` — composants réutilisables (ex. `ClothingCard`)
-
----
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! Ouvrez une issue pour signaler un bug ou proposer une amélioration, puis soumettez une Pull Request.
-
----
-
-## 📝 Licence
-
-Indiquez ici la licence que vous souhaitez utiliser (MIT, Apache-2.0, etc.).
-
----
-
-Si vous voulez, je peux :
-- Ajouter des **captures d'écran** dans ce README
-- Générer des **badges** (build / coverage)
-- Rédiger une **version anglaise**
-
-Souhaitez-vous que j'ajoute des captures d'écran et des instructions spécifiques à votre projet Firebase (règles Storage / Firestore) ?
