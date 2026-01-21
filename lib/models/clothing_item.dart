@@ -7,6 +7,7 @@ class ClothingItem {
   final String imageUrl; 
   final String color;
   final String occasion;
+  final String season;
 
   ClothingItem({
     required this.id,
@@ -17,6 +18,7 @@ class ClothingItem {
     required this.imageUrl,
     this.color = '',
     this.occasion = 'casual',
+    this.season = 'Toutes saisons',
   });
 
   ClothingItem copyWith({
@@ -27,6 +29,7 @@ class ClothingItem {
     String? imageUrl,
     String? color,
     String? occasion,
+    String? season,
   }) {
     return ClothingItem(
       id: id,
@@ -37,6 +40,7 @@ class ClothingItem {
       imageUrl: imageUrl ?? this.imageUrl,
       color: color ?? this.color,
       occasion: occasion ?? this.occasion,
+      season: season ?? this.season,
     );
   }
 
@@ -48,6 +52,7 @@ class ClothingItem {
     String? imageUrl,
     String? color,
     String? occasion,
+    String? season,
   }) {
     return copyWith(
       userId: userId,
@@ -57,6 +62,7 @@ class ClothingItem {
       imageUrl: imageUrl,
       color: color,
       occasion: occasion,
+      season: season,
     );
   }
 
@@ -69,6 +75,7 @@ Map<String, dynamic> toJson() => {
         'imageUrl': imageUrl,
         'color': color,
         'occasion': occasion,
+        'season': season
       };
 
       
@@ -82,6 +89,7 @@ factory ClothingItem.fromJson(String id, Map<String, dynamic> json) {
       imageUrl: json['imageUrl'] as String,
       color: (json['color'] ?? '') as String,
       occasion: (json['occasion'] ?? 'casual') as String,
+      season: (json['season'] ?? 'Toutes saisons') as String,
     );
   }
 }

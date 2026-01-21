@@ -9,8 +9,11 @@ class FirestoreService {
     await clothingCollection.add({
       'id': item.id,
       'name': item.name,
-      'category': item.category,
+      'mainCategory': item.mainCategory,
+      'subCategory': item.subCategory,
       'color': item.color,
+      'season': item.season,
+      'occasion': item.occasion,
       'imageUrl': item.imageUrl,
       'userId': userId,
     });
@@ -21,8 +24,11 @@ class FirestoreService {
     if (snapshot.docs.isNotEmpty) {
       await snapshot.docs.first.reference.update({
         'name': item.name,
-        'category': item.category,
+        'mainCategory': item.mainCategory,
+        'subCategory': item.subCategory,
         'color': item.color,
+        'season': item.season,
+        'occasion': item.occasion,
         'imageUrl': item.imageUrl,
       });
     }

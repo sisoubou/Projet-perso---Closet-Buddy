@@ -25,6 +25,8 @@ class AddClothingScreenState extends State<AddClothingScreen> {
   String _mainCategory = '';
   String _subCategory = '';
   String _color = '';
+  String _selectedSeason = 'Toutes saisons';
+  String _occasion = 'casual';
   File? _imageFile;
   List<String> _subCategoryOptions = [];
   final List<String> _mainCategories = ['Haut', 'Bas', 'Chaussures', 'Accessoires'];
@@ -36,19 +38,26 @@ class AddClothingScreenState extends State<AddClothingScreen> {
   };
   final List<String> _colorOptions = ['Rouge', 'Bleu', 'Vert', 'Noir', 'Blanc', 'Jaune', 'Violet', 'Orange', 'Rose', 'Gris', 'Marron', 'Multicoulore'];
   final Map<String, Color> _colorMap = {
-  'Rouge': Colors.red,
-  'Bleu': Colors.blue,
-  'Vert': Colors.green,
-  'Noir': Colors.black,
-  'Blanc': Colors.white,
-  'Jaune': Colors.yellow,
-  'Violet': Colors.purple,
-  'Orange': Colors.orange,
-  'Rose': Colors.pink,
-  'Gris': Colors.grey,
-  'Marron': Colors.brown,
-  'Multicoulore': Colors.transparent,
-};
+    'Rouge': Colors.red,
+    'Bleu': Colors.blue,
+    'Vert': Colors.green,
+    'Noir': Colors.black,
+    'Blanc': Colors.white,
+    'Jaune': Colors.yellow,
+    'Violet': Colors.purple,
+    'Orange': Colors.orange,
+    'Rose': Colors.pink,
+    'Gris': Colors.grey,
+    'Marron': Colors.brown,
+    'Multicoulore': Colors.transparent,
+  };
+  final Map<String, String> _occasionMap = {
+    'casual': 'Décontracté',
+    'formal': 'Formel',
+    'sport': 'Sportif',
+    'party': 'Fête',
+  };
+  final List<String> _seasonOptions = ['Toutes saisons', 'Hiver', 'Printemps', 'Eté', 'Automne'];
 
 
   Future<void> _pickImage() async {
@@ -181,6 +190,8 @@ class AddClothingScreenState extends State<AddClothingScreen> {
       subCategory: _subCategory,
       imageUrl: imageUrl.isNotEmpty ? imageUrl : '',
       color: _color,
+      occasion: _occasion,
+      season: _selectedSeason,
     );
 
     try {
@@ -192,6 +203,8 @@ class AddClothingScreenState extends State<AddClothingScreen> {
         "imageUrl": newItem.imageUrl,
         "color": newItem.color,
         "userId": currentUser.uid,
+        "occasion": newItem.occasion,
+        "season" : newItem.season,
       });
 
       widget.onAdd(newItem);
@@ -291,6 +304,37 @@ class AddClothingScreenState extends State<AddClothingScreen> {
                   validator: (v) => v == null || v.isEmpty ? 'Choisissez une sous-catégorie' : null,
                 ),
 
+              DropdownButtonFormField<String>(
+                value: _occasion,
+                decoration: const InputDecoration(labelText: 'Occasion'),
+                items: _occasionMap.entries.map((entry) {
+                  return DropdownMenuItem(
+                    value: entry.key,
+                    child: Text(entry.value),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  setState(() {
+                    _occasion = val ?? 'casual';
+                  });
+                },
+              ),
+
+              DropdownButtonFormField<String>(
+                value: _selectedSeason,
+                decoration: const InputDecoration(labelText: 'Saison'),
+                items: _seasonOptions.map((season) {
+                  return DropdownMenuItem(
+                    value: season,
+                    child: Text(season),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  setState(() {
+                    _selectedSeason = val ?? 'Toutes saisons';
+                  });
+                },
+              ),
 
               const SizedBox(height: 20),
 

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
@@ -22,6 +21,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   String _filterMainCategory = 'Tout';
   String _filterSubCategory = 'Tout';
   String _filterColor = 'Tout';
+  String _filterOccasion = 'Tout';
   List<String> _subCategoryOptions = [];
 
   final List<String> _mainCategories = ['Haut', 'Bas', 'Chaussures', 'Accessoires'];
@@ -40,6 +40,14 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     'Noir': Colors.black,
     'Blanc': Colors.white,
     'Jaune': Colors.yellow,
+  };
+
+  final List<String> _occasionOptions = ['casual', 'formal', 'sport', 'party'];
+  final Map<String, String> _occasionDisplayMap = {
+    'casual': 'Décontracté',
+    'formal': 'Formel',
+    'sport': 'Sportif',
+    'party': 'Fête',
   };
 
   void _addNewItem(ClothingItem item) {
@@ -143,12 +151,24 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
+                Expanded(
+                  child: DropdownButton<String>(
+                    value: _filterOccasion,
+                    items: [
+                      DropdownMenuItem(value: _allOption, child: const Text('Tout')),
+                      ..._occasionOptions.map((occ) => DropdownMenuItem(value: occ, child: Text(_occasionDisplayMap[occ] ?? occ))),
+                    ],
+                    onChanged: (val) => setState(() => _filterOccasion = val ?? _allOption),
+                  ),
+                ),
+                const SizedBox(width: 10),
                 TextButton.icon(
                   onPressed: () {
                     setState(() {
                       _filterMainCategory = _allOption;
                       _filterSubCategory = _allOption;
                       _filterColor = _allOption;
+                      _filterOccasion = _allOption;
                       _subCategoryOptions = [];
                     });
                   },
@@ -181,6 +201,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     subCategory: data['subCategory'] ?? '',
                     imageUrl: data['imageUrl'] ?? '',
                     color: data['color'] ?? '',
+                    occasion: data['occasion'] ?? 'casual',
+                    season: data['season'] ?? 'Toutes saisons',
                   );
                 }).toList();
 
@@ -188,7 +210,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   final mainOk = _filterMainCategory == _allOption || item.mainCategory == _filterMainCategory;
                   final subOk = _filterSubCategory == _allOption || item.subCategory == _filterSubCategory;
                   final colorOk = _filterColor == _allOption || item.color == _filterColor;
-                  return mainOk && subOk && colorOk;
+                  final occasionOk = _filterOccasion == _allOption || item.occasion == _filterOccasion;
+                  return mainOk && subOk && colorOk && occasionOk;
                 }).toList();
 
                 if (filteredItems.isEmpty) {

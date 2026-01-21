@@ -32,6 +32,8 @@ class EditClothingScreenState extends State<EditClothingScreen> {
   late String _mainCategory;
   late String _subCategory;
   late String _color;
+  late String _occasion;
+  late String _season;
   File? _imageFile;
 
   List<String> _subCategoryOptions = [];
@@ -59,6 +61,15 @@ class EditClothingScreenState extends State<EditClothingScreen> {
     'Multicoulore': Colors.transparent,
   };
 
+  final Map<String, String> _occasionMap = {
+    'casual': 'Décontracté',
+    'formal': 'Formel',
+    'sport': 'Sportif',
+    'party': 'Fête',
+  };
+
+  final List<String> _seasonOptions = ['Toutes saisons', 'Hiver', 'Printemps', 'Eté', 'Automne'];
+
   bool _isSaving = false;
 
   @override
@@ -69,6 +80,8 @@ class EditClothingScreenState extends State<EditClothingScreen> {
     _subCategory = widget.clothingItem.subCategory;
     _subCategoryOptions = _subCategoriesMap[_mainCategory] ?? [];
     _color = widget.clothingItem.color;
+    _occasion = widget.clothingItem.occasion;
+    _season = widget.clothingItem.season;
   }
 
   Future<void> _pickImage() async {
@@ -118,7 +131,7 @@ class EditClothingScreenState extends State<EditClothingScreen> {
         final TaskSnapshot snapshot = await storageRef.putFile(_imageFile!);
         debugPrint('Upload completed: state=${snapshot.state}, bytesTransferred=${snapshot.bytesTransferred}/${snapshot.totalBytes}');
         debugPrint('Snapshot ref fullPath: ${snapshot.ref.fullPath}');
-        debugPrint('Snapshot ref bucket: ${snapshot.ref.bucket ?? FirebaseStorage.instance.ref().bucket}');
+        debugPrint('Snapshot ref bucket: ${snapshot.ref.bucket}');
         try {
           final meta = await snapshot.ref.getMetadata();
           debugPrint('getMetadata success: fullPath=${meta.fullPath}, size=${meta.size}');
@@ -173,6 +186,8 @@ class EditClothingScreenState extends State<EditClothingScreen> {
       mainCategory: _mainCategory,
       subCategory: _subCategory,
       color: _color,
+      occasion: _occasion,
+      season: _season,
       imageUrl: imageUrl,
     );
 
@@ -184,6 +199,8 @@ class EditClothingScreenState extends State<EditClothingScreen> {
       'mainCategory': updatedItem.mainCategory,
       'subCategory': updatedItem.subCategory,
       'color': updatedItem.color,
+      'occasion': updatedItem.occasion,
+      'season': updatedItem.season,
       'imageUrl': updatedItem.imageUrl,
     });
 
@@ -263,6 +280,38 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                           ),
                         );
                       }).toList(),
+                    ),
+
+                    DropdownButtonFormField<String>(
+                      value: _occasion,
+                      decoration: const InputDecoration(labelText: 'Occasion'),
+                      items: _occasionMap.entries.map((entry) {
+                        return DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _occasion = val ?? 'casual';
+                        });
+                      },
+                    ),
+
+                    DropdownButtonFormField<String>(
+                      value: _season,
+                      decoration: const InputDecoration(labelText: 'Saison'),
+                      items: _seasonOptions.map((season) {
+                        return DropdownMenuItem(
+                          value: season,
+                          child: Text(season),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _season = val ?? 'Toutes saisons';
+                        });
+                      },
                     ),
 
                     const SizedBox(height: 20),
