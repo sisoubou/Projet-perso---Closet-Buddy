@@ -8,17 +8,20 @@ import 'dart:io';
 
 import '../models/user.dart';
 import '../models/clothing_item.dart';
+import '../services/firestore_service.dart';
 
 class EditClothingScreen extends StatefulWidget {
   final User user;
   final ClothingItem clothingItem;
   final Function(ClothingItem) onUpdate;
+  final Function(String)? onDelete;
 
   const EditClothingScreen({
     super.key,
     required this.user,
     required this.clothingItem,
     required this.onUpdate,
+    this.onDelete,
   });
 
   @override
@@ -208,10 +211,62 @@ class EditClothingScreenState extends State<EditClothingScreen> {
     Navigator.pop(context);
   }
 
+  Future<void> _deleteItem() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer le vêtement'),
+        content: const Text('Êtes-vous sûr de vouloir supprimer ce vêtement ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isSaving = true);
+
+      try {
+        await FirestoreService().deleteClothing(widget.clothingItem.id, widget.user.id);
+
+        widget.onDelete?.call(widget.clothingItem.id);
+
+        if (!mounted) return;
+        Navigator.of(context).pop();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vêtement supprimé avec succès')),
+        );
+      } catch (e) {
+        setState(() => _isSaving = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur lors de la suppression du vêtement')),
+        );
+        return;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Modifier un vêtement')),
+      appBar: AppBar(
+        title: const Text('Modifier un vêtement'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: _deleteItem,
+          ),
+        ],
+      ),
       body: _isSaving
           ? const Center(child: CircularProgressIndicator())
           : Padding(

@@ -238,6 +238,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                               user: widget.user,
                               clothingItem: filteredItems[index],
                               onUpdate: (_) => setState(() {}),
+                              onDelete: (id) => setState(() {}),
                             ),
                           ),
                         );
