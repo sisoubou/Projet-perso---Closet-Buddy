@@ -44,4 +44,14 @@ class FirestoreService {
         }
     }
   }
+
+  final CollectionReference outfitCollection =
+      FirebaseFirestore.instance.collection('outfits');
+  
+  Future<void> saveOutfit(dynamic outfit, String userId) async {
+    await outfitCollection.doc(outfit.id).set({
+      ...outfit.toJson(),
+      'userId': userId, 
+    });
+  }
 }

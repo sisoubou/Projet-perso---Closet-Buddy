@@ -58,4 +58,28 @@ class Outfit {
       occasions: occasions,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'dateCreation': dateCreation.toIso8601String(),
+        'occasions': occasions,
+        'top': top.toJson(),
+        'bottom': bottom.toJson(),
+        'shoes': shoes?.toJson(),
+        'accessory': accessory?.toJson(),
+      };
+
+  factory Outfit.fromJson(Map<String, dynamic> json) {
+    return Outfit(
+      id: json['id'],
+      name: json['name'],
+      dateCreation: DateTime.parse(json['dateCreation']),
+      occasions: json['occasions'],
+      top: ClothingItem.fromJson(json['top']['id'], json['top']),
+      bottom: ClothingItem.fromJson(json['bottom']['id'], json['bottom']),
+      shoes: json['shoes'] != null ? ClothingItem.fromJson(json['shoes']['id'], json['shoes']) : null,
+      accessory: json['accessory'] != null ? ClothingItem.fromJson(json['accessory']['id'], json['accessory']) : null,
+    );
+  }
 }
