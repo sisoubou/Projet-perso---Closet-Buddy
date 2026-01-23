@@ -7,6 +7,8 @@ import '../models/clothing_item.dart';
 import 'add_clothing_screen.dart';
 import '../widgets/clothing_card.dart';
 import 'edit_clothing_screen.dart';
+import 'outfit_screen.dart';
+import 'outfit_creator_screen.dart';
 
 class WardrobeScreen extends StatefulWidget {
   final User user;
@@ -85,10 +87,63 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       appBar: AppBar(
         title: Text('Garde-robe de ${widget.user.name}'),
         actions: [
-          IconButton(
-            tooltip: 'Se déconnecter',
-            icon: const Icon(Icons.logout),
-            onPressed: _confirmSignOut,
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'create_outfit':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => OutfitCreatorScreen(user: widget.user),
+                    ),
+                  );
+                  break;
+                case 'view_outfits':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => OutfitScreen(user: widget.user),
+                    ),
+                  );
+                  break;
+                case 'logout':
+                  _confirmSignOut();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'create_outfit',
+                child: Row(
+                  children: [
+                    Icon(Icons.add, color: Colors.black54),
+                    SizedBox(width: 8),
+                    Text('Créer une tenue'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'view_outfits',
+                child: Row(
+                  children: [
+                    Icon(Icons.style, color: Colors.black54),
+                    SizedBox(width: 8),
+                    Text('Mes tenues'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.black54),
+                    SizedBox(width: 8),
+                    Text('Se déconnecter'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -96,11 +151,15 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Row(
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 8,
               children: [
-                Expanded(
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.22,
                   child: DropdownButton<String>(
                     value: _filterMainCategory,
+                    isExpanded: true,
                     items: [
                       DropdownMenuItem(value: _allOption, child: const Text('Tout')),
                       ..._mainCategories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))),
@@ -119,10 +178,11 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     },
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.22,
                   child: DropdownButton<String>(
                     value: _filterSubCategory,
+                    isExpanded: true,
                     items: [
                       DropdownMenuItem(value: _allOption, child: const Text('Tout')),
                       ..._subCategoryOptions.map((sub) => DropdownMenuItem(value: sub, child: Text(sub))),
@@ -130,10 +190,11 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     onChanged: (_subCategoryOptions.isEmpty) ? null : (val) => setState(() => _filterSubCategory = val ?? _allOption),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.22,
                   child: DropdownButton<String>(
                     value: _filterColor,
+                    isExpanded: true,
                     items: [
                       DropdownMenuItem(value: _allOption, child: const Text('Tout')),
                       ..._colorOptions.map((c) => DropdownMenuItem(
@@ -142,7 +203,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                           children: [
                             Container(width: 20, height: 20, decoration: BoxDecoration(color: _colorMap[c], border: Border.all(color: Colors.black))),
                             const SizedBox(width: 8),
-                            Text(c),
+                            Expanded(child: Text(c, overflow: TextOverflow.ellipsis)),
                           ],
                         ),
                       )),
@@ -150,10 +211,11 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     onChanged: (val) => setState(() => _filterColor = val ?? _allOption),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.22,
                   child: DropdownButton<String>(
                     value: _filterOccasion,
+                    isExpanded: true,
                     items: [
                       DropdownMenuItem(value: _allOption, child: const Text('Tout')),
                       ..._occasionOptions.map((occ) => DropdownMenuItem(value: occ, child: Text(_occasionDisplayMap[occ] ?? occ))),
@@ -161,7 +223,6 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     onChanged: (val) => setState(() => _filterOccasion = val ?? _allOption),
                   ),
                 ),
-                const SizedBox(width: 10),
                 TextButton.icon(
                   onPressed: () {
                     setState(() {

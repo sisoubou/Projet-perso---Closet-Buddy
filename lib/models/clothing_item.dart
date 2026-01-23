@@ -4,7 +4,7 @@ class ClothingItem {
   final String name;
   final String mainCategory;
   final String subCategory;
-  final String imageUrl; 
+  final String imageUrl;
   final String color;
   final String occasion;
   final String season;
@@ -66,8 +66,8 @@ class ClothingItem {
     );
   }
 
-  
-Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson() => {
+        'id': id, 
         'userId': userId,
         'name': name,
         'mainCategory': mainCategory,
@@ -78,18 +78,26 @@ Map<String, dynamic> toJson() => {
         'season': season
       };
 
-      
-factory ClothingItem.fromJson(String id, Map<String, dynamic> json) {
+  factory ClothingItem.fromJson(String id, dynamic json) {
+    Map<String, dynamic> safeMap(dynamic data) {
+      if (data is Map) {
+        return Map<String, dynamic>.from(data.map((key, value) => MapEntry(key.toString(), value)));
+      }
+      return {};
+    }
+    
+    final data = safeMap(json);
+    
     return ClothingItem(
       id: id,
-      userId: json['userId'] as String,
-      name: json['name'] as String,
-      mainCategory: json['mainCategory'] as String,
-      subCategory: json['subCategory'] as String,
-      imageUrl: json['imageUrl'] as String,
-      color: (json['color'] ?? '') as String,
-      occasion: (json['occasion'] ?? 'casual') as String,
-      season: (json['season'] ?? 'Toutes saisons') as String,
+      userId: (data['userId'] ?? '') as String,
+      name: (data['name'] ?? 'Sans nom') as String,
+      mainCategory: (data['mainCategory'] ?? '') as String,
+      subCategory: (data['subCategory'] ?? '') as String,
+      imageUrl: (data['imageUrl'] ?? '') as String,
+      color: (data['color'] ?? '') as String,
+      occasion: (data['occasion'] ?? 'casual') as String,
+      season: (data['season'] ?? 'Toutes saisons') as String,
     );
   }
 }

@@ -41,24 +41,6 @@ class Outfit {
     );
   }
 
-  Outfit modify({
-    String? name,
-    ClothingItem? top,
-    ClothingItem? bottom,
-    ClothingItem? shoes,
-    ClothingItem? accessory,
-    String? occasions,
-  }) {
-    return copyWith(
-      name: name,
-      top: top,
-      bottom: bottom,
-      shoes: shoes,
-      accessory: accessory,
-      occasions: occasions,
-    );
-  }
-
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
@@ -70,16 +52,47 @@ class Outfit {
         'accessory': accessory?.toJson(),
       };
 
-  factory Outfit.fromJson(Map<String, dynamic> json) {
+  factory Outfit.fromJson(dynamic json) {
+    if (json is! Map) {
+      throw Exception("Format de données invalide pour la tenue");
+    }
+    
+    Map<String, dynamic> safeMap(dynamic v) {
+      if (v is Map) {
+        return Map<String, dynamic>.from(v.map((key, value) => MapEntry(key.toString(), value)));
+      }
+      return {};
+    }
+    
+    final data = safeMap(json);
+
+    String safeId(dynamic v) => (v is Map && v['id'] != null) ? v['id'].toString() : 'unknown';
+
     return Outfit(
-      id: json['id'],
-      name: json['name'],
-      dateCreation: DateTime.parse(json['dateCreation']),
-      occasions: json['occasions'],
-      top: ClothingItem.fromJson(json['top']['id'], json['top']),
-      bottom: ClothingItem.fromJson(json['bottom']['id'], json['bottom']),
-      shoes: json['shoes'] != null ? ClothingItem.fromJson(json['shoes']['id'], json['shoes']) : null,
-      accessory: json['accessory'] != null ? ClothingItem.fromJson(json['accessory']['id'], json['accessory']) : null,
+      id: data['id']?.toString() ?? '',
+      name: data['name']?.toString() ?? 'Sans nom',
+      dateCreation: data['dateCreation'] != null 
+          ? DateTime.parse(data['dateCreation']) 
+          : DateTime.now(),
+      occasions: data['occasions']?.toString(),
+      
+      top: ClothingItem.fromJson(
+        safeId(data['top']), 
+        safeMap(data['top'])
+      ),
+      
+      bottom: ClothingItem.fromJson(
+        safeId(data['bottom']), 
+        safeMap(data['bottom'])
+      ),
+      
+      shoes: data['shoes'] != null 
+          ? ClothingItem.fromJson(safeId(data['shoes']), safeMap(data['shoes']))
+          : null,
+          
+      accessory: data['accessory'] != null 
+          ? ClothingItem.fromJson(safeId(data['accessory']), safeMap(data['accessory']))
+          : null,
     );
   }
 }
