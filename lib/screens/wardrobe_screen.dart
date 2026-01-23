@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import '../models/user.dart';
 import '../models/clothing_item.dart';
@@ -279,29 +280,27 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   return const Center(child: Text('Aucun vêtement correspondant '));
                 }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(10),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 3 / 4,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                  ),
+                return MasonryGridView.count(
+                  padding: const EdgeInsets.all(16),
+                  crossAxisCount: 2,  
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16, 
                   itemCount: filteredItems.length,
                   itemBuilder: (context, index) {
+                  
                     return ClothingCard(
                       item: filteredItems[index],
                       onTap: () {
                         Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                            context,
+                            MaterialPageRoute(
                             builder: (_) => EditClothingScreen(
-                              user: widget.user,
-                              clothingItem: filteredItems[index],
-                              onUpdate: (_) => setState(() {}),
-                              onDelete: (id) => setState(() {}),
+                                user: widget.user,
+                                clothingItem: filteredItems[index],
+                                onUpdate: (_) => setState(() {}),
+                                onDelete: (id) => setState(() {}),
                             ),
-                          ),
+                            ),
                         );
                       },
                     );
