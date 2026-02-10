@@ -1,10 +1,10 @@
-# Closet Buddy 👗🧥
+# Closet Buddy
 
 **Closet Buddy** est une application Flutter qui vous aide à cataloguer et gérer votre garde-robe : ajouter des vêtements avec photo, modifier des éléments, filtrer par catégorie et couleur, et gérer l'authentification via Firebase.
 
 ---
 
-## ✨ Fonctionnalités principales
+## Fonctionnalités principales
 
 - **Authentification** via Firebase Auth (redirige vers l'écran d'authentification quand l'utilisateur est déconnecté)
 - **Ajouter / Modifier / Supprimer** des vêtements (photo, catégorie principale/sous-catégorie, couleur)
@@ -14,7 +14,7 @@
 
 ---
 
-## 🚀 Prérequis
+## Prérequis
 
 - Flutter SDK (stable) installé
 - Un projet Firebase configuré (Auth, Firestore, Storage)
@@ -22,7 +22,7 @@
 
 ---
 
-## 🛠️ Installation & Configuration
+## Installation & Configuration
 
 1. Clonez le dépôt et placez-vous dans le dossier du projet :
 
@@ -56,18 +56,18 @@ flutterfire configure
 flutter run
 ```
 
-> 💡 Si `flutter pub outdated` signale des packages obsolètes, vous pouvez mettre à jour les dépendances en évaluant d'abord la compatibilité puis en modifiant `pubspec.yaml`.
+> Si `flutter pub outdated` signale des packages obsolètes, vous pouvez mettre à jour les dépendances en évaluant d'abord la compatibilité puis en modifiant `pubspec.yaml`.
 
 ---
 
-## ⚙️ Configuration Firebase & App Check
+## Configuration Firebase & App Check
 
 - Le projet active **Firebase App Check** (voir `main.dart`). En mode debug, un provider de debug est utilisé — en production, configurez le provider approprié (Play Integrity / DeviceCheck).
 - Vérifiez que le bucket Storage utilisé est correctement configuré et accessible par vos règles Firebase.
 
 ---
 
-## 📱 Utilisation
+## Utilisation
 
 - **Connexion** : l'app redirige vers `AuthScreen` si l'utilisateur n'est pas connecté.
 - **Ajouter un vêtement** : `Ajouter` → sélectionnez une image, catégorie principale → sous-catégorie → couleur (sélecteur visuel), puis validez.
@@ -77,7 +77,7 @@ flutter run
 
 ---
 
-## 🧪 Tests & Linting
+## Tests & Linting
 
 - Pour exécuter les tests :
 
@@ -95,7 +95,7 @@ flutter format .
 
 ---
 
-## 📁 Structure importante
+## Structure importante
 
 - `lib/main.dart` — point d'entrée, configuration Firebase
 - `lib/screens/` — écrans (auth, garde-robe, ajout, édition)
