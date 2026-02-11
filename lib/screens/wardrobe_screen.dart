@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
+import '../services/weather_service.dart';
 import '../models/user.dart';
 import '../models/clothing_item.dart';
 import 'add_clothing_screen.dart';
@@ -82,6 +83,144 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     }
   }
 
+  Map<String, dynamic>? _weatherData;
+  bool _isLoadingWeather = true;
+  String? _weatherError;
+
+  @override
+  void initState() {
+    super.initState();
+    initializeDateFormatting('fr_FR', null);
+    _loadWeather();
+  }
+
+  Future<void> _loadWeather() async {
+    try {
+      final data = await WeatherService().getCurrentWeather();
+      if (mounted) {
+        setState(() {
+          _weatherData = data;
+          _isLoadingWeather = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _weatherError = e.toString();
+          _isLoadingWeather = false;
+        });
+      }
+      print("Erreur météo : $e");
+    }
+  }
+
+  Widget _buildSuggestionCard(List<ClothingItem> allItems) {
+    if (_isLoadingWeather) {
+      return const Padding(
+        padding: EdgeInsets.all(20.0),
+        child: Center(child: LinearProgressIndicator()),
+      );
+    }
+    if (_weatherError != null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(16),
+        color: Colors.red[50],
+        child: Text('Météo indisponible (Activez le GPS) : $_weatherError', style: const TextStyle(color: Colors.red)),
+      );
+    }
+    if (_weatherData == null) {
+      return const SizedBox.shrink();
+    }
+
+    final temp = _weatherData!['main']['temp'];
+    final description = _weatherData!['weather'][0]['description'];
+    final city = _weatherData!['name'];
+
+    List<String> targetSeasons = ['Toutes saisons'];
+    if (temp < 12) {
+      targetSeasons.add('Hiver');
+    } else if (temp < 22) {
+      targetSeasons.addAll(['Printemps', 'Automne']);
+    } else {
+      targetSeasons.add('Été');
+      targetSeasons.add('Ete');
+    }
+
+    final tops = allItems.where((item) => item.mainCategory == 'Haut' && targetSeasons.contains(item.season)).toList();
+    final bottoms = allItems.where((item) => item.mainCategory == 'Bas' && targetSeasons.contains(item.season)).toList();
+    final shoes = allItems.where((item) => item.mainCategory == 'Chaussures' && targetSeasons.contains(item.season)).toList();
+  
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('$city · ${temp.toStringAsFixed(1)}°C', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+              const Icon(Icons.cloud, color: Colors.blueGrey),
+            ],
+          ),
+          Text(description.toString().toUpperCase(), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          const SizedBox(height: 12),
+          
+          if (tops.isEmpty && bottoms.isEmpty)
+             const Text("Aucun vêtement trouvé pour cette météo.", style: TextStyle(fontStyle: FontStyle.italic)),
+
+          if (tops.isNotEmpty) ...[
+            const Text('Hauts conseillés :', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 120, 
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: tops.length,
+                itemBuilder: (context, index) => SizedBox(
+                  width: 100,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ClothingCard(item: tops[index], onTap: () {}),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          
+          if (bottoms.isNotEmpty) ...[
+            const Text('Bas conseillés :', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: bottoms.length,
+                itemBuilder: (context, index) => SizedBox(
+                  width: 100,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ClothingCard(item: bottoms[index], onTap: () {}),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  } 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,20 +231,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             onSelected: (value) {
               switch (value) {
                 case 'create_outfit':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => OutfitCreatorScreen(user: widget.user),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => OutfitCreatorScreen(user: widget.user)));
                   break;
                 case 'view_outfits':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => OutfitScreen(user: widget.user),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => OutfitScreen(user: widget.user)));
                   break;
                 case 'logout':
                   _confirmSignOut();
@@ -113,212 +242,120 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'create_outfit',
-                child: Row(
-                  children: [
-                    Icon(Icons.add, color: Colors.black54),
-                    SizedBox(width: 8),
-                    Text('Créer une tenue'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'view_outfits',
-                child: Row(
-                  children: [
-                    Icon(Icons.style, color: Colors.black54),
-                    SizedBox(width: 8),
-                    Text('Mes tenues'),
-                  ],
-                ),
-              ),
+              const PopupMenuItem(value: 'create_outfit', child: Row(children: [Icon(Icons.add), SizedBox(width: 8), Text('Créer une tenue')])),
+              const PopupMenuItem(value: 'view_outfits', child: Row(children: [Icon(Icons.style), SizedBox(width: 8), Text('Mes tenues')])),
               const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.black54),
-                    SizedBox(width: 8),
-                    Text('Se déconnecter'),
-                  ],
-                ),
-              ),
+              const PopupMenuItem(value: 'logout', child: Row(children: [Icon(Icons.logout), SizedBox(width: 8), Text('Se déconnecter')])),
             ],
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 8,
-              children: [
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.22,
-                  child: DropdownButton<String>(
-                    value: _filterMainCategory,
-                    isExpanded: true,
-                    items: [
-                      DropdownMenuItem(value: _allOption, child: const Text('Tout')),
-                      ..._mainCategories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))),
-                    ],
-                    onChanged: (val) {
-                      setState(() {
-                        _filterMainCategory = val ?? _allOption;
-                        if (_filterMainCategory == _allOption) {
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('clothing_items')
+            .where('userId', isEqualTo: widget.user.id)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+          final docs = snapshot.data!.docs;
+          final allItems = docs.map((d) {
+             final data = d.data() as Map<String, dynamic>;
+             return ClothingItem.fromJson(d.id, data); 
+          }).toList();
+
+          final filteredItems = allItems.where((item) {
+             final mainOk = _filterMainCategory == _allOption || item.mainCategory == _filterMainCategory;
+             final subOk = _filterSubCategory == _allOption || item.subCategory == _filterSubCategory;
+             final colorOk = _filterColor == _allOption || item.color == _filterColor;
+             final occasionOk = _filterOccasion == _allOption || item.occasion == _filterOccasion;
+             return mainOk && subOk && colorOk && occasionOk;
+          }).toList();
+
+          return Column(
+            children: [
+              _buildSuggestionCard(allItems), 
+
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Row(
+                  children: [
+                      DropdownButton<String>(
+                        value: _filterMainCategory,
+                        items: [DropdownMenuItem(value: _allOption, child: const Text('Tout')), ..._mainCategories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))],
+                        onChanged: (val) => setState(() { _filterMainCategory = val ?? _allOption; if (_filterMainCategory == _allOption) { _subCategoryOptions = []; _filterSubCategory = _allOption; } else { _subCategoryOptions = _subCategoriesMap[_filterMainCategory] ?? []; _filterSubCategory = _allOption; } })
+                      ),
+                      const SizedBox(width: 10),
+                      
+                      DropdownButton<String>(
+                        value: _filterSubCategory,
+                        items: [DropdownMenuItem(value: _allOption, child: const Text('Tout')), ..._subCategoryOptions.map((sub) => DropdownMenuItem(value: sub, child: Text(sub)))],
+                        onChanged: (_subCategoryOptions.isEmpty) ? null : (val) => setState(() => _filterSubCategory = val ?? _allOption),
+                      ),
+                      const SizedBox(width: 10),
+
+                      DropdownButton<String>(
+                        value: _filterColor,
+                        items: [DropdownMenuItem(value: _allOption, child: const Text('Coul.')), ..._colorOptions.map((c) => DropdownMenuItem(value: c, child: Row(children: [Container(width: 15, height: 15, color: _colorMap[c]), const SizedBox(width: 5), Text(c)])))],
+                        onChanged: (val) => setState(() => _filterColor = val ?? _allOption),
+                      ),
+                      const SizedBox(width: 10),
+
+                      DropdownButton<String>(
+                        value: _filterOccasion,
+                        items: [DropdownMenuItem(value: _allOption, child: const Text('Occas.')), ..._occasionOptions.map((occ) => DropdownMenuItem(value: occ, child: Text(_occasionDisplayMap[occ] ?? occ)))],
+                        onChanged: (val) => setState(() => _filterOccasion = val ?? _allOption),
+                      ),
+                      const SizedBox(width: 10),
+
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: () => setState(() {
+                          _filterMainCategory = _allOption;
+                          _filterSubCategory = _allOption;
+                          _filterColor = _allOption;
+                          _filterOccasion = _allOption;
                           _subCategoryOptions = [];
-                          _filterSubCategory = _allOption;
-                        } else {
-                          _subCategoryOptions = _subCategoriesMap[_filterMainCategory] ?? [];
-                          _filterSubCategory = _allOption;
-                        }
-                      });
-                    },
-                  ),
+                        })
+                      ),
+                  ],
                 ),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.22,
-                  child: DropdownButton<String>(
-                    value: _filterSubCategory,
-                    isExpanded: true,
-                    items: [
-                      DropdownMenuItem(value: _allOption, child: const Text('Tout')),
-                      ..._subCategoryOptions.map((sub) => DropdownMenuItem(value: sub, child: Text(sub))),
-                    ],
-                    onChanged: (_subCategoryOptions.isEmpty) ? null : (val) => setState(() => _filterSubCategory = val ?? _allOption),
-                  ),
-                ),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.22,
-                  child: DropdownButton<String>(
-                    value: _filterColor,
-                    isExpanded: true,
-                    items: [
-                      DropdownMenuItem(value: _allOption, child: const Text('Tout')),
-                      ..._colorOptions.map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Row(
-                          children: [
-                            Container(width: 20, height: 20, decoration: BoxDecoration(color: _colorMap[c], border: Border.all(color: Colors.black))),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(c, overflow: TextOverflow.ellipsis)),
-                          ],
+              ),
+
+              const SizedBox(height: 10),
+
+              Expanded(
+                child: filteredItems.isEmpty 
+                    ? const Center(child: Text("Aucun vêtement trouvé"))
+                    : GridView.builder(
+                        padding: const EdgeInsets.all(10),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 3 / 4,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
                         ),
-                      )),
-                    ],
-                    onChanged: (val) => setState(() => _filterColor = val ?? _allOption),
-                  ),
-                ),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.22,
-                  child: DropdownButton<String>(
-                    value: _filterOccasion,
-                    isExpanded: true,
-                    items: [
-                      DropdownMenuItem(value: _allOption, child: const Text('Tout')),
-                      ..._occasionOptions.map((occ) => DropdownMenuItem(value: occ, child: Text(_occasionDisplayMap[occ] ?? occ))),
-                    ],
-                    onChanged: (val) => setState(() => _filterOccasion = val ?? _allOption),
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _filterMainCategory = _allOption;
-                      _filterSubCategory = _allOption;
-                      _filterColor = _allOption;
-                      _filterOccasion = _allOption;
-                      _subCategoryOptions = [];
-                    });
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Réinitialiser'),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('clothing_items')
-                  .where('userId', isEqualTo: widget.user.id)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-                final docs = snapshot.data!.docs;
-                final items = docs.map((d) {
-                  final data = d.data() as Map<String, dynamic>;
-                  return ClothingItem(
-                    id: d.id,
-                    userId: data['userId'] ?? '',
-                    name: data['name'] ?? '',
-                    mainCategory: data['mainCategory'] ?? '',
-                    subCategory: data['subCategory'] ?? '',
-                    imageUrl: data['imageUrl'] ?? '',
-                    color: data['color'] ?? '',
-                    occasion: data['occasion'] ?? 'casual',
-                    season: data['season'] ?? 'Toutes saisons',
-                  );
-                }).toList();
-
-                final filteredItems = items.where((item) {
-                  final mainOk = _filterMainCategory == _allOption || item.mainCategory == _filterMainCategory;
-                  final subOk = _filterSubCategory == _allOption || item.subCategory == _filterSubCategory;
-                  final colorOk = _filterColor == _allOption || item.color == _filterColor;
-                  final occasionOk = _filterOccasion == _allOption || item.occasion == _filterOccasion;
-                  return mainOk && subOk && colorOk && occasionOk;
-                }).toList();
-
-                if (filteredItems.isEmpty) {
-                  return const Center(child: Text('Aucun vêtement correspondant '));
-                }
-
-                return MasonryGridView.count(
-                  padding: const EdgeInsets.all(16),
-                  crossAxisCount: 2,  
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16, 
-                  itemCount: filteredItems.length,
-                  itemBuilder: (context, index) {
-                  
-                    return ClothingCard(
-                      item: filteredItems[index],
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                            builder: (_) => EditClothingScreen(
-                                user: widget.user,
-                                clothingItem: filteredItems[index],
-                                onUpdate: (_) => setState(() {}),
-                                onDelete: (id) => setState(() {}),
-                            ),
-                            ),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          return ClothingCard(
+                            item: filteredItems[index],
+                            onTap: () {
+                               Navigator.push(context, MaterialPageRoute(builder: (_) => EditClothingScreen(user: widget.user, clothingItem: filteredItems[index], onUpdate: (_) => setState((){}), onDelete: (_)=>setState((){}))));
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AddClothingScreen(
-              user: widget.user,
-              onAdd: _addNewItem,
-            ),
+            builder: (context) => AddClothingScreen(user: widget.user, onAdd: _addNewItem),
           ),
         ),
         child: const Icon(Icons.add),

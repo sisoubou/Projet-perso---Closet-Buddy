@@ -27,18 +27,20 @@ class ClothingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: item.imageUrl.isNotEmpty
-                  ? Image.network(
-                      item.imageUrl,
-                      fit: BoxFit.cover,
-                    )
-                  : Container(
-                      height: 150,
-                      color: const Color(0xFFF0F0F0),
-                      child: Icon(Icons.checkroom, color: Colors.grey[400], size: 40),
-                    ),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: item.imageUrl.isNotEmpty
+                    ? Image.network(
+                        item.imageUrl,
+                        fit: BoxFit.cover,
+                      )
+                    : Container(
+                        height: 150,
+                        color: const Color(0xFFF0F0F0),
+                        child: Icon(Icons.checkroom, color: Colors.grey[400], size: 40),
+                      ),
+              )
             ),
             
             Padding(
