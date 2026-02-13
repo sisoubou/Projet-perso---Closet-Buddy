@@ -6,26 +6,42 @@ class WeatherService {
   final String apiKey = '5488446c6d5ef18387a25ca5ec97e7d9'; 
   
   Future<Map<String, dynamic>> getCurrentWeather() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw Exception('Le GPS est désactivé.');
-    }
+    Position position;
 
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        throw Exception('Permission GPS refusée.');
+    try{
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Le GPS est désactivé.');
       }
-    }
 
-    if (permission == LocationPermission.deniedForever) {
-      throw Exception('Permission GPS refusée définitivement.');
-    }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Permission GPS refusée.');
+        }
+      }
 
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.low,
-    );
+      position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 5),
+      );
+    } catch (e) {
+      print('GPS trop long, on utilise Paris par défaut.');
+
+      position = Position(
+        latitude: 48.8566, 
+        longitude: 2.3522, 
+        timestamp: DateTime.now(), 
+        accuracy: 0, 
+        altitude: 0, 
+        heading: 0, 
+        speed: 0, 
+        speedAccuracy: 0,
+        altitudeAccuracy: 0,
+        headingAccuracy: 0
+      );
+    }
 
     final url = Uri.parse(
         'https://api.openweathermap.org/data/2.5/weather?lat=${position.latitude}&lon=${position.longitude}&units=metric&lang=fr&appid=$apiKey');

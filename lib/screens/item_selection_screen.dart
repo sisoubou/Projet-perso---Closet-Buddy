@@ -39,8 +39,16 @@ class ItemSelectionScreen extends StatelessWidget {
             ),
             itemCount: docs.length,
             itemBuilder: (ctx, i) {
-              final data = docs[i].data() as Map<String, dynamic>;
-              final item = ClothingItem.fromJson(docs[i].id, data);
+              final rawData = docs[i].data();
+              
+              Map<String, dynamic> safeData = {};
+              if (rawData is Map) {
+                safeData = Map<String, dynamic>.from(
+                  rawData.map((key, value) => MapEntry(key.toString(), value))
+                );
+              }
+
+              final item = ClothingItem.fromJson(docs[i].id, safeData);
               
               return ClothingCard(
                 item: item,

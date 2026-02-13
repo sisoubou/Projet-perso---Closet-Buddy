@@ -259,9 +259,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
           final docs = snapshot.data!.docs;
+          
           final allItems = docs.map((d) {
-             final data = d.data() as Map<String, dynamic>;
-             return ClothingItem.fromJson(d.id, data); 
+             return ClothingItem.fromJson(d.id, d.data()); 
           }).toList();
 
           final filteredItems = allItems.where((item) {
