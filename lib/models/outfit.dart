@@ -5,68 +5,58 @@ class Outfit {
   final String name;
   final DateTime dateCreation;
   final String? occasions;
-  final ClothingItem top;
-  final ClothingItem bottom;
-  final ClothingItem? shoes;
-  final ClothingItem? accessory;
+  final List<ClothingItem> items;
 
   Outfit({
     required this.id,
     required this.name,
     required this.dateCreation,
-    required this.top,
-    required this.bottom,
+    required this.items,
     this.occasions,
-    this.shoes,
-    this.accessory,
   });
-
-  Outfit copyWith({
-    String? name,
-    ClothingItem? top,
-    ClothingItem? bottom,
-    ClothingItem? shoes,
-    ClothingItem? accessory,
-    String? occasions,
-  }) {
-    return Outfit(
-      id: id,
-      name: name ?? this.name,
-      top: top ?? this.top,
-      bottom: bottom ?? this.bottom,
-      shoes: shoes ?? this.shoes,
-      accessory: accessory ?? this.accessory,
-      dateCreation: dateCreation,
-      occasions: occasions ?? this.occasions,
-    );
-  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
         'dateCreation': dateCreation.toIso8601String(),
         'occasions': occasions,
-        'top': top.toJson(),
-        'bottom': bottom.toJson(),
-        'shoes': shoes?.toJson(),
-        'accessory': accessory?.toJson(),
+        'items': items.map((item) => item.toJson()).toList(),
       };
 
   factory Outfit.fromJson(dynamic json) {
     if (json is! Map) {
-      throw Exception("Format de données invalide pour la tenue");
+      throw Exception("Format invalide");
     }
     
     Map<String, dynamic> safeMap(dynamic v) {
-      if (v is Map) {
-        return Map<String, dynamic>.from(v.map((key, value) => MapEntry(key.toString(), value)));
-      }
+      if (v is Map) return Map<String, dynamic>.from(v.map((k, v) => MapEntry(k.toString(), v)));
       return {};
     }
     
     final data = safeMap(json);
+    List<ClothingItem> itemsList = [];   
 
-    String safeId(dynamic v) => (v is Map && v['id'] != null) ? v['id'].toString() : 'unknown';
+    if (data['items'] is List) {
+      itemsList = (data['items'] as List).map((i) {
+        String id = (i is Map && i['id'] != null) ? i['id'] : 'unknown'; 
+        return ClothingItem.fromJson(id, i);
+      }).toList();
+    }
+    else {
+      String safeId(dynamic v) => (v is Map && v['id'] != null) ? v['id'].toString() : 'unknown';
+      if (data['top'] != null) {
+        itemsList.add(ClothingItem.fromJson(safeId(data['top']), safeMap(data['top'])));
+      }
+      if (data['bottom'] != null) {
+        itemsList.add(ClothingItem.fromJson(safeId(data['bottom']), safeMap(data['bottom'])));
+      }
+      if (data['shoes'] != null) {
+        itemsList.add(ClothingItem.fromJson(safeId(data['shoes']), safeMap(data['shoes'])));
+      }
+      if (data['accessory'] != null) {
+        itemsList.add(ClothingItem.fromJson(safeId(data['accessory']), safeMap(data['accessory'])));
+      }
+    }
 
     return Outfit(
       id: data['id']?.toString() ?? '',
@@ -75,24 +65,7 @@ class Outfit {
           ? DateTime.parse(data['dateCreation']) 
           : DateTime.now(),
       occasions: data['occasions']?.toString(),
-      
-      top: ClothingItem.fromJson(
-        safeId(data['top']), 
-        safeMap(data['top'])
-      ),
-      
-      bottom: ClothingItem.fromJson(
-        safeId(data['bottom']), 
-        safeMap(data['bottom'])
-      ),
-      
-      shoes: data['shoes'] != null 
-          ? ClothingItem.fromJson(safeId(data['shoes']), safeMap(data['shoes']))
-          : null,
-          
-      accessory: data['accessory'] != null 
-          ? ClothingItem.fromJson(safeId(data['accessory']), safeMap(data['accessory']))
-          : null,
+      items: itemsList,
     );
   }
 }

@@ -30,12 +30,12 @@ class ItemSelectionScreen extends StatelessWidget {
           if (docs.isEmpty) return const Center(child: Text("Aucun vêtement dans cette catégorie"));
 
           return GridView.builder(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(16),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2, 
-              childAspectRatio: 0.75,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10
+              childAspectRatio: 0.7,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16
             ),
             itemCount: docs.length,
             itemBuilder: (ctx, i) {

@@ -25,19 +25,13 @@ class User {
   void createOutfit({
     required String outfitId,
     required String name,
-    required ClothingItem top,
-    required ClothingItem bottom,
-    ClothingItem? shoes,
-    ClothingItem? accessory,
+    required List<ClothingItem> items,
     String occasions = 'casual',
   }) {
     final newOutfit = Outfit(
       id: outfitId,
       name: name,
-      top: top,
-      bottom: bottom,
-      shoes: shoes,
-      accessory: accessory,
+      items: items,
       dateCreation: DateTime.now(),
       occasions: occasions,
     );

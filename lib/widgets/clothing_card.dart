@@ -9,6 +9,9 @@ class ClothingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final colorText = item.colors.isNotEmpty ? item.colors.join(', ') : 'Aucunes couleurs';
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -60,7 +63,7 @@ class ClothingCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${item.mainCategory} · ${item.color}',
+                    '${item.mainCategory} · $colorText',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],

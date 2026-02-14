@@ -34,21 +34,22 @@ class EditClothingScreenState extends State<EditClothingScreen> {
   late String _name;
   late String _mainCategory;
   late String _subCategory;
-  late String _color;
-  late String _occasion;
+  late List<String> _selectedColors;
+  late List<String> _selectedOccasions;
   late String _season;
   File? _imageFile;
 
   List<String> _subCategoryOptions = [];
-  final List<String> _mainCategories = ['Haut', 'Bas', 'Chaussures', 'Accessoires'];
+  final List<String> _mainCategories = ['Hauts', 'Manteaux', 'Bas', 'Robes & Combinaisons', 'Chaussures', 'Accessoires'];
   final Map<String, List<String>> _subCategoriesMap = {
-    'Haut': ['T-shirt', 'Pull', 'Chemise'],
-    'Bas': ['Jean', 'Jupe', 'Pantalon'],
-    'Chaussures': ['Baskets', 'Bottes', 'Sandales'],
-    'Accessoires': ['Ceinture', 'Sac', 'Chapeau'],
+    'Hauts': ['Tops', 'T-shirts', 'Pulls', 'Chemises', 'Sweats', 'Tops de sport'],
+    'Manteaux': ['Manteaux', 'Vestes', 'Blousons'],
+    'Bas': ['Jeans', 'Jupes', 'Pantalons', 'Shorts', 'Leggings', 'Joggings'],
+    'Robes & Combinaisons': ['Robes mini', 'Robes longue', 'Combinaisons'],
+    'Chaussures': ['Baskets', 'Bottes', 'Chaussures Plates', 'Talons'],
+    'Accessoires': ['Ceintures', 'Sacs', 'Chapeaux', 'Bijoux', 'Accessoires Cheveux', 'Echarpes', 'Gants', 'Lunettes de soleil', 'Chaussettes & Collants'],
   };
-
-  final List<String> _colorOptions = ['Rouge', 'Bleu', 'Vert', 'Noir', 'Blanc', 'Jaune', 'Violet', 'Orange', 'Rose', 'Gris', 'Marron', 'Multicoulore'];
+  final List<String> _colorOptions = ['Rouge', 'Bleu', 'Vert', 'Noir', 'Blanc', 'Jaune', 'Violet', 'Orange', 'Rose', 'Gris', 'Marron', 'Beige'];
   final Map<String, Color> _colorMap = {
     'Rouge': Colors.red,
     'Bleu': Colors.blue,
@@ -61,9 +62,8 @@ class EditClothingScreenState extends State<EditClothingScreen> {
     'Rose': Colors.pink,
     'Gris': Colors.grey,
     'Marron': Colors.brown,
-    'Multicoulore': Colors.transparent,
+    'Beige': const Color.fromARGB(255, 216, 163, 143),
   };
-
   final Map<String, String> _occasionMap = {
     'casual': 'Décontracté',
     'formal': 'Formel',
@@ -82,8 +82,8 @@ class EditClothingScreenState extends State<EditClothingScreen> {
     _mainCategory = widget.clothingItem.mainCategory;
     _subCategory = widget.clothingItem.subCategory;
     _subCategoryOptions = _subCategoriesMap[_mainCategory] ?? [];
-    _color = widget.clothingItem.color;
-    _occasion = widget.clothingItem.occasion;
+    _selectedColors = widget.clothingItem.colors;
+    _selectedOccasions = widget.clothingItem.occasions;
     _season = widget.clothingItem.season;
   }
 
@@ -109,77 +109,22 @@ class EditClothingScreenState extends State<EditClothingScreen> {
     String imageUrl = widget.clothingItem.imageUrl;
 
     if (_imageFile != null) {
+      final fb_auth.User? currentUser = fb_auth.FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
       final storageRef = FirebaseStorage.instance
           .ref()
-          .child('wardrobe_images')
-          .child('${widget.clothingItem.id}.jpg');
-
-      // Log current auth and App Check token presence to help diagnose failures
-      final currentUser = fb_auth.FirebaseAuth.instance.currentUser;
-      debugPrint('Current user uid: ${currentUser?.uid}');
-      final appCheckToken = await FirebaseAppCheck.instance.getToken(false);
-      final appCheckTokenPresent =
-          appCheckToken != null && appCheckToken.toString().isNotEmpty && appCheckToken.toString() != 'null';
-      debugPrint('AppCheck token present: $appCheckTokenPresent');
-
-      if (currentUser == null) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vous devez être connecté pour ajouter une image.')),
-        );
-        return;
-      }
+          .child('users')
+          .child(currentUser.uid)
+          .child('wardrobe')
+          .child('${widget.clothingItem.id}_edited.jpg');
 
       try {
         final TaskSnapshot snapshot = await storageRef.putFile(_imageFile!);
-        debugPrint('Upload completed: state=${snapshot.state}, bytesTransferred=${snapshot.bytesTransferred}/${snapshot.totalBytes}');
-        debugPrint('Snapshot ref fullPath: ${snapshot.ref.fullPath}');
-        debugPrint('Snapshot ref bucket: ${snapshot.ref.bucket}');
-        try {
-          final meta = await snapshot.ref.getMetadata();
-          debugPrint('getMetadata success: fullPath=${meta.fullPath}, size=${meta.size}');
-        } on FirebaseException catch (metaErr) {
-          debugPrint('getMetadata failed: ${metaErr.code} - ${metaErr.message}');
-        } catch (metaErr) {
-          debugPrint('getMetadata unexpected error: $metaErr');
-        }
-        // Try to fetch download URL; retry briefly on object-not-found (transient)
-        try {
-          imageUrl = await snapshot.ref.getDownloadURL();
-          debugPrint('Download URL: $imageUrl');
-        } on FirebaseException catch (e) {
-          if (e.code == 'object-not-found') {
-            debugPrint('getDownloadURL returned object-not-found; retrying...');
-            bool got = false;
-            for (int i = 0; i < 5; i++) {
-              await Future.delayed(const Duration(milliseconds: 500));
-              try {
-                imageUrl = await snapshot.ref.getDownloadURL();
-                got = true;
-                debugPrint('Download URL after retry: $imageUrl');
-                break;
-              } catch (e) {
-                // ignore and retry
-              }
-            }
-            if (!got) rethrow;
-          } else {
-            rethrow;
-          }
-        }
-      } on FirebaseException catch (e) {
-        debugPrint('Storage FirebaseException: ${e.code} - ${e.message}');
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur upload image : ${e.message ?? e.code}')),
-        );
-        return;
+        imageUrl = await snapshot.ref.getDownloadURL();
       } catch (e) {
-        debugPrint('Upload failed: $e');
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur upload image')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur upload image')));
         return;
       }
     }
@@ -188,24 +133,13 @@ class EditClothingScreenState extends State<EditClothingScreen> {
       name: _name,
       mainCategory: _mainCategory,
       subCategory: _subCategory,
-      color: _color,
-      occasion: _occasion,
+      colors: _selectedColors,
+      occasions: _selectedOccasions,
       season: _season,
       imageUrl: imageUrl,
     );
 
-    await FirebaseFirestore.instance
-        .collection('clothing_items')
-        .doc(widget.clothingItem.id)
-        .update({
-      'name': updatedItem.name,
-      'mainCategory': updatedItem.mainCategory,
-      'subCategory': updatedItem.subCategory,
-      'color': updatedItem.color,
-      'occasion': updatedItem.occasion,
-      'season': updatedItem.season,
-      'imageUrl': updatedItem.imageUrl,
-    });
+    await FirestoreService().updateClothingItem(updatedItem);
 
     widget.onUpdate(updatedItem);
     Navigator.pop(context);
@@ -240,17 +174,8 @@ class EditClothingScreenState extends State<EditClothingScreen> {
 
         if (!mounted) return;
         Navigator.of(context).pop();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vêtement supprimé avec succès')),
-        );
       } catch (e) {
         setState(() => _isSaving = false);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur lors de la suppression du vêtement')),
-        );
-        return;
       }
     }
   }
@@ -298,7 +223,6 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                           _subCategory = '';
                         });
                       },
-                      validator: (v) => v == null || v.isEmpty ? 'Choisissez une catégorie' : null,
                     ),
 
                     if (_subCategoryOptions.isNotEmpty)
@@ -307,105 +231,69 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                         decoration: const InputDecoration(labelText: 'Sous-catégorie'),
                         items: _subCategoryOptions.map((sub) => DropdownMenuItem(value: sub, child: Text(sub))).toList(),
                         onChanged: (val) => setState(() => _subCategory = val ?? ''),
-                        validator: (v) => v == null || v.isEmpty ? 'Choisissez une sous-catégorie' : null,
                       ),
-
-                    Text('Couleur', style: TextStyle(fontSize: 16)),
-                    const SizedBox(height: 8),
+                    
+                    const SizedBox(height: 16),
+                    Text('Couleurs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     Wrap(
                       spacing: 8,
                       children: _colorOptions.map((colorName) {
-                        final color = _colorMap[colorName]!;
-                        final isSelected = _color == colorName;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() => _color = colorName);
+                        final isSelected = _selectedColors.contains(colorName);
+                        return FilterChip(
+                          label: Text(colorName),
+                          selected: isSelected,
+                          selectedColor: _colorMap[colorName]!.withOpacity(0.5),
+                          checkmarkColor: Colors.black,
+                          onSelected: (bool selected) {
+                            setState(() {
+                              if (selected) _selectedColors.add(colorName);
+                              else _selectedColors.remove(colorName);
+                            });
                           },
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: color,
-                              border: Border.all(
-                                color: isSelected ? Colors.black : Colors.grey,
-                                width: isSelected ? 3 : 1,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
+                          backgroundColor: Colors.grey[100],
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSelected ? Colors.black : Colors.grey.shade300)),
+                          avatar: CircleAvatar(backgroundColor: _colorMap[colorName], radius: 10),
                         );
                       }).toList(),
                     ),
 
-                    DropdownButtonFormField<String>(
-                      value: _occasion,
-                      decoration: const InputDecoration(labelText: 'Occasion'),
-                      items: _occasionMap.entries.map((entry) {
-                        return DropdownMenuItem(
-                          value: entry.key,
-                          child: Text(entry.value),
+                    const SizedBox(height: 16),
+                    const Text('Occasions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Wrap(
+                      spacing: 8,
+                      children: _occasionMap.entries.map((entry) {
+                        final isSelected = _selectedOccasions.contains(entry.key);
+                        return FilterChip(
+                          label: Text(entry.value),
+                          selected: isSelected,
+                          onSelected: (bool selected) {
+                            setState(() {
+                              if (selected) _selectedOccasions.add(entry.key);
+                              else _selectedOccasions.remove(entry.key);
+                            });
+                          },
                         );
                       }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _occasion = val ?? 'casual';
-                        });
-                      },
                     ),
 
                     DropdownButtonFormField<String>(
                       value: _season,
                       decoration: const InputDecoration(labelText: 'Saison'),
-                      items: _seasonOptions.map((season) {
-                        return DropdownMenuItem(
-                          value: season,
-                          child: Text(season),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _season = val ?? 'Toutes saisons';
-                        });
-                      },
+                      items: _seasonOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                      onChanged: (val) => setState(() => _season = val ?? 'Toutes saisons'),
                     ),
 
                     const SizedBox(height: 20),
-
-                    // Image affichée
+                    // Affichage Image (Similaire à avant)
                     _imageFile != null
-                        ? Image.file(
-                            _imageFile!,
-                            height: 200,
-                            fit: BoxFit.cover,
-                          )
+                        ? Image.file(_imageFile!, height: 200, fit: BoxFit.cover)
                         : widget.clothingItem.imageUrl.isNotEmpty
-                            ? Image.network(
-                                widget.clothingItem.imageUrl,
-                                height: 200,
-                                fit: BoxFit.cover,
-                              )
-                            : Container(
-                                height: 150,
-                                color: Colors.grey.shade200,
-                                alignment: Alignment.center,
-                                child:
-                                    const Text('Aucune image disponible'),
-                              ),
+                            ? Image.network(widget.clothingItem.imageUrl, height: 200, fit: BoxFit.cover)
+                            : Container(height: 150, color: Colors.grey.shade200, alignment: Alignment.center, child: const Text('Aucune image')),
 
-                    const SizedBox(height: 10),
-
-                    TextButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.photo),
-                      label: const Text('Choisir depuis la galerie'),
-                    ),
-
+                    TextButton.icon(icon: const Icon(Icons.photo), label: const Text('Changer l\'image'), onPressed: _pickImage),
                     const SizedBox(height: 20),
-
-                    ElevatedButton(
-                      onPressed: _saveForm,
-                      child: const Text('Mettre à jour'),
-                    ),
+                    ElevatedButton(onPressed: _saveForm, child: const Text('Sauvegarder les modifications')),
                   ],
                 ),
               ),

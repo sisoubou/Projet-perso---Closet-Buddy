@@ -12,9 +12,9 @@ class FirestoreService {
       'name': item.name,
       'mainCategory': item.mainCategory,
       'subCategory': item.subCategory,
-      'color': item.color,
+      'colors': item.colors,
       'season': item.season,
-      'occasion': item.occasion,
+      'occasions': item.occasions,
       'imageUrl': item.imageUrl,
       'userId': userId,
     });
@@ -25,9 +25,9 @@ class FirestoreService {
       'name': item.name,
       'mainCategory': item.mainCategory,
       'subCategory': item.subCategory,
-      'color': item.color,
+      'colors': item.colors,
       'season': item.season,
-      'occasion': item.occasion,
+      'occasions': item.occasions,
       'imageUrl': item.imageUrl,
     });
   }

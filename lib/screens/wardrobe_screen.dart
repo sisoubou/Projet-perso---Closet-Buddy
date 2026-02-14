@@ -28,15 +28,16 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   String _filterOccasion = 'Tout';
   List<String> _subCategoryOptions = [];
 
-  final List<String> _mainCategories = ['Haut', 'Bas', 'Chaussures', 'Accessoires'];
+  final List<String> _mainCategories = ['Hauts', 'Manteaux', 'Bas', 'Robes & Combinaisons', 'Chaussures', 'Accessoires'];
   final Map<String, List<String>> _subCategoriesMap = {
-    'Haut': ['T-shirt', 'Pull', 'Chemise', 'Veste'],
-    'Bas': ['Jean', 'Jupe', 'Pantalon', 'Short'],
-    'Chaussures': ['Baskets', 'Bottes', 'Sandales', 'Talons'],
-    'Accessoires': ['Ceinture', 'Sac', 'Chapeau'],
+    'Hauts': ['Tops', 'T-shirts', 'Pulls', 'Chemises', 'Sweats', 'Tops de sport'],
+    'Manteaux': ['Manteaux', 'Vestes', 'Blousons'],
+    'Bas': ['Jeans', 'Jupes', 'Pantalons', 'Shorts', 'Leggings', 'Joggings'],
+    'Robes & Combinaisons': ['Robes mini', 'Robes longue', 'Combinaisons'],
+    'Chaussures': ['Baskets', 'Bottes', 'Chaussures Plates', 'Talons'],
+    'Accessoires': ['Ceintures', 'Sacs', 'Chapeaux', 'Bijoux', 'Accessoires Cheveux', 'Echarpes', 'Gants', 'Lunettes de soleil', 'Chaussettes & Collants'],
   };
-
-  final List<String> _colorOptions = ['Rouge', 'Bleu', 'Vert', 'Noir', 'Blanc', 'Jaune'];
+  final List<String> _colorOptions = ['Rouge', 'Bleu', 'Vert', 'Noir', 'Blanc', 'Jaune', 'Violet', 'Orange', 'Rose', 'Gris', 'Marron', 'Beige'];
   final Map<String, Color> _colorMap = {
     'Rouge': Colors.red,
     'Bleu': Colors.blue,
@@ -44,6 +45,12 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     'Noir': Colors.black,
     'Blanc': Colors.white,
     'Jaune': Colors.yellow,
+    'Violet': Colors.purple,
+    'Orange': Colors.orange,
+    'Rose': Colors.pink,
+    'Gris': Colors.grey,
+    'Marron': Colors.brown,
+    'Beige': const Color.fromARGB(255, 216, 163, 143),
   };
 
   final List<String> _occasionOptions = ['casual', 'formal', 'sport', 'party'];
@@ -147,7 +154,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       targetSeasons.add('Ete');
     }
 
-    final tops = allItems.where((item) => item.mainCategory == 'Haut' && targetSeasons.contains(item.season)).toList();
+    final tops = allItems.where((item) => item.mainCategory == 'Hauts' && targetSeasons.contains(item.season)).toList();
     final bottoms = allItems.where((item) => item.mainCategory == 'Bas' && targetSeasons.contains(item.season)).toList();
     final shoes = allItems.where((item) => item.mainCategory == 'Chaussures' && targetSeasons.contains(item.season)).toList();
   
@@ -267,8 +274,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           final filteredItems = allItems.where((item) {
              final mainOk = _filterMainCategory == _allOption || item.mainCategory == _filterMainCategory;
              final subOk = _filterSubCategory == _allOption || item.subCategory == _filterSubCategory;
-             final colorOk = _filterColor == _allOption || item.color == _filterColor;
-             final occasionOk = _filterOccasion == _allOption || item.occasion == _filterOccasion;
+             final colorOk = _filterColor == _allOption || item.colors.contains(_filterColor);
+             final occasionOk = _filterOccasion == _allOption || item.occasions.contains(_filterOccasion);
              return mainOk && subOk && colorOk && occasionOk;
           }).toList();
 

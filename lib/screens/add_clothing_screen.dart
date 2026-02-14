@@ -24,19 +24,21 @@ class AddClothingScreenState extends State<AddClothingScreen> {
   String _name = '';
   String _mainCategory = '';
   String _subCategory = '';
-  String _color = '';
+  List<String> _selectedColors = [];
   String _selectedSeason = 'Toutes saisons';
-  String _occasion = 'casual';
+  List<String> _selectedOccasions = [''];
   File? _imageFile;
   List<String> _subCategoryOptions = [];
-  final List<String> _mainCategories = ['Haut', 'Bas', 'Chaussures', 'Accessoires'];
+  final List<String> _mainCategories = ['Hauts', 'Manteaux', 'Bas', 'Robes & Combinaisons', 'Chaussures', 'Accessoires'];
   final Map<String, List<String>> _subCategoriesMap = {
-    'Haut': ['T-shirt', 'Pull', 'Chemise', 'Veste'],
-    'Bas': ['Jean', 'Jupe', 'Pantalon', 'Short'],
-    'Chaussures': ['Baskets', 'Bottes', 'Sandales', 'Talons'],
-    'Accessoires': ['Ceinture', 'Sac', 'Chapeau'],
+    'Hauts': ['Tops', 'T-shirts', 'Pulls', 'Chemises', 'Sweats', 'Tops de sport'],
+    'Manteaux': ['Manteaux', 'Vestes', 'Blousons'],
+    'Bas': ['Jeans', 'Jupes', 'Pantalons', 'Shorts', 'Leggings', 'Joggings'],
+    'Robes & Combinaisons': ['Robes mini', 'Robes longue', 'Combinaisons'],
+    'Chaussures': ['Baskets', 'Bottes', 'Chaussures Plates', 'Talons'],
+    'Accessoires': ['Ceintures', 'Sacs', 'Chapeaux', 'Bijoux', 'Accessoires Cheveux', 'Echarpes', 'Gants', 'Lunettes de soleil', 'Chaussettes & Collants'],
   };
-  final List<String> _colorOptions = ['Rouge', 'Bleu', 'Vert', 'Noir', 'Blanc', 'Jaune', 'Violet', 'Orange', 'Rose', 'Gris', 'Marron', 'Multicoulore'];
+  final List<String> _colorOptions = ['Rouge', 'Bleu', 'Vert', 'Noir', 'Blanc', 'Jaune', 'Violet', 'Orange', 'Rose', 'Gris', 'Marron', 'Beige'];
   final Map<String, Color> _colorMap = {
     'Rouge': Colors.red,
     'Bleu': Colors.blue,
@@ -49,7 +51,7 @@ class AddClothingScreenState extends State<AddClothingScreen> {
     'Rose': Colors.pink,
     'Gris': Colors.grey,
     'Marron': Colors.brown,
-    'Multicoulore': Colors.transparent,
+    'Beige': const Color.fromARGB(255, 216, 163, 143),
   };
   final Map<String, String> _occasionMap = {
     'casual': 'Décontracté',
@@ -58,7 +60,6 @@ class AddClothingScreenState extends State<AddClothingScreen> {
     'party': 'Fête',
   };
   final List<String> _seasonOptions = ['Toutes saisons', 'Hiver', 'Printemps', 'Eté', 'Automne'];
-
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -73,7 +74,6 @@ class AddClothingScreenState extends State<AddClothingScreen> {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    // Vérification utilisateur connecté
     final fb_auth.User? currentUser = fb_auth.FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       if (!mounted) return;
@@ -86,7 +86,6 @@ class AddClothingScreenState extends State<AddClothingScreen> {
     String imageUrl = '';
 
     if (_imageFile != null) {
-      // Log auth and App Check state
       debugPrint('Current user uid: ${currentUser.uid}');
       final appCheckToken = await FirebaseAppCheck.instance.getToken(false);
       final appCheckTokenPresent =
@@ -189,8 +188,8 @@ class AddClothingScreenState extends State<AddClothingScreen> {
       mainCategory: _mainCategory,
       subCategory: _subCategory,
       imageUrl: imageUrl.isNotEmpty ? imageUrl : '',
-      color: _color,
-      occasion: _occasion,
+      colors: _selectedColors,
+      occasions: _selectedOccasions,
       season: _selectedSeason,
     );
 
@@ -201,9 +200,9 @@ class AddClothingScreenState extends State<AddClothingScreen> {
         "mainCategory": newItem.mainCategory,
         "subCategory": newItem.subCategory,
         "imageUrl": newItem.imageUrl,
-        "color": newItem.color,
+        "colors": newItem.colors,
         "userId": currentUser.uid,
-        "occasion": newItem.occasion,
+        "occasions": newItem.occasions,
         "season" : newItem.season,
       });
 
@@ -237,35 +236,35 @@ class AddClothingScreenState extends State<AddClothingScreen> {
                 onSaved: (v) => _name = v!,
               ),
 
-              Text('Couleur', style: TextStyle(fontSize: 16)),
+              Text('Couleurs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 children: _colorOptions.map((colorName) {
-                  final color = _colorMap[colorName]!;
-                  final isSelected = _color == colorName;
-                  return GestureDetector(
-                    onTap: () {
+                  final isSelected = _selectedColors.contains(colorName);
+                  return FilterChip(
+                    label: Text(colorName),
+                    selected: isSelected,
+                    selectedColor: _colorMap[colorName]!.withOpacity(0.5),
+                    checkmarkColor: Colors.black,
+                    onSelected: (bool selected) {
                       setState(() {
-                        _color = colorName;
+                        if (selected) {
+                          _selectedColors.add(colorName);
+                        } else {
+                          _selectedColors.remove(colorName);
+                        }
                       });
                     },
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: color,
-                        border: Border.all(
-                          color: isSelected ? Colors.black : Colors.grey,
-                          width: isSelected ? 3 : 1,
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                    backgroundColor: Colors.grey[100],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: isSelected ? Colors.black : Colors.grey.shade300),
                     ),
+                    avatar: CircleAvatar(backgroundColor: _colorMap[colorName], radius: 10),
                   );
                 }).toList(),
               ),
-
 
               DropdownButtonFormField<String>(
                 initialValue: _mainCategory.isEmpty ? null : _mainCategory,
@@ -304,20 +303,27 @@ class AddClothingScreenState extends State<AddClothingScreen> {
                   validator: (v) => v == null || v.isEmpty ? 'Choisissez une sous-catégorie' : null,
                 ),
 
-              DropdownButtonFormField<String>(
-                value: _occasion,
-                decoration: const InputDecoration(labelText: 'Occasion'),
-                items: _occasionMap.entries.map((entry) {
-                  return DropdownMenuItem(
-                    value: entry.key,
-                    child: Text(entry.value),
+              const SizedBox(height: 16),
+              const Text('Occasions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _occasionMap.entries.map((entry) {
+                  final isSelected = _selectedOccasions.contains(entry.key);
+                  return FilterChip(
+                    label: Text(entry.value),
+                    selected: isSelected,
+                    onSelected: (bool selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedOccasions.add(entry.key);
+                        } else {
+                          _selectedOccasions.remove(entry.key);
+                        }
+                      });
+                    },
                   );
                 }).toList(),
-                onChanged: (val) {
-                  setState(() {
-                    _occasion = val ?? 'casual';
-                  });
-                },
               ),
 
               DropdownButtonFormField<String>(

@@ -10,17 +10,14 @@ class OutfitCreatorScreen extends StatefulWidget {
   const OutfitCreatorScreen({super.key, required this.user});
 
   @override
- State<OutfitCreatorScreen> createState() => _OutfitCreatorScreenState();
+  State<OutfitCreatorScreen> createState() => _OutfitCreatorScreenState();
 }
 
 class _OutfitCreatorScreenState extends State<OutfitCreatorScreen> {
   final _formKey = GlobalKey<FormState>();
   String _outfitName = '';
   
-  ClothingItem? _selectedTop;
-  ClothingItem? _selectedBottom;
-  ClothingItem? _selectedShoes;
-  ClothingItem? _selectedAccessory;
+  final List<ClothingItem> _selectedItems = [];
 
   bool _isSaving = false;
 
@@ -34,19 +31,17 @@ class _OutfitCreatorScreenState extends State<OutfitCreatorScreen> {
 
     if (result != null && result is ClothingItem) {
       setState(() {
-        if (category == 'Haut') _selectedTop = result;
-        if (category == 'Bas') _selectedBottom = result;
-        if (category == 'Chaussures') _selectedShoes = result;
-        if (category == 'Accessoires') _selectedAccessory = result;
+        _selectedItems.add(result);
       });
     }
   }
 
   Future<void> _saveOutfit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedTop == null || _selectedBottom == null) {
+    
+    if (_selectedItems.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Il faut au moins un haut et un bas !')),
+        const SnackBar(content: Text('Ajoutez au moins 2 articles pour créer une tenue !')),
       );
       return;
     }
@@ -59,10 +54,7 @@ class _OutfitCreatorScreenState extends State<OutfitCreatorScreen> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: _outfitName,
         dateCreation: DateTime.now(),
-        top: _selectedTop!,
-        bottom: _selectedBottom!,
-        shoes: _selectedShoes,
-        accessory: _selectedAccessory,
+        items: _selectedItems,
         occasions: 'casual',
       );
 
@@ -78,34 +70,6 @@ class _OutfitCreatorScreenState extends State<OutfitCreatorScreen> {
     }
   }
 
-  Widget _buildSlot(String label, String category, ClothingItem? item) {
-    return GestureDetector(
-      onTap: () => _pickItem(category),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        height: 150,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(10),
-          image: item != null && item.imageUrl.isNotEmpty
-              ? DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover)
-              : null,
-        ),
-        child: item == null
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_circle_outline, size: 40, color: Colors.grey.shade600),
-                  Text("Ajouter $label", style: TextStyle(color: Colors.grey.shade600)),
-                ],
-              )
-            : null,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,19 +78,67 @@ class _OutfitCreatorScreenState extends State<OutfitCreatorScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
             children: [
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Nom de la tenue (ex: Tenue Lundi)'),
+                decoration: const InputDecoration(labelText: 'Nom de la tenue (ex: Look Hiver)'),
                 validator: (v) => v!.isEmpty ? 'Donnez un nom' : null,
                 onSaved: (v) => _outfitName = v!,
               ),
               const SizedBox(height: 20),
               
-              _buildSlot("un Haut", 'Haut', _selectedTop),
-              _buildSlot("un Bas", 'Bas', _selectedBottom),
-              _buildSlot("des Chaussures", 'Chaussures', _selectedShoes),
-              _buildSlot("un Accessoire", 'Accessoires', _selectedAccessory),
+              const Text("Composition de la tenue :", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+
+              Expanded(
+                child: _selectedItems.isEmpty 
+                  ? Center(child: Text("Aucun vêtement sélectionné", style: TextStyle(color: Colors.grey.shade400)))
+                  : ReorderableListView(
+                      onReorder: (oldIndex, newIndex) {
+                        setState(() {
+                          if (oldIndex < newIndex) newIndex -= 1;
+                          final item = _selectedItems.removeAt(oldIndex);
+                          _selectedItems.insert(newIndex, item);
+                        });
+                      },
+                      children: [
+                        for (int i = 0; i < _selectedItems.length; i++)
+                          ListTile(
+                            key: ValueKey(_selectedItems[i].id),
+                            leading: Container(
+                              width: 50, height: 50,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                image: _selectedItems[i].imageUrl.isNotEmpty 
+                                  ? DecorationImage(image: NetworkImage(_selectedItems[i].imageUrl), fit: BoxFit.cover)
+                                  : null,
+                                color: Colors.grey[200]
+                              ),
+                              child: _selectedItems[i].imageUrl.isEmpty ? const Icon(Icons.checkroom) : null,
+                            ),
+                            title: Text(_selectedItems[i].name),
+                            subtitle: Text(_selectedItems[i].subCategory),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                              onPressed: () => setState(() => _selectedItems.removeAt(i)),
+                            ),
+                          ),
+                      ],
+                    ),
+              ),
+              
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 10,
+                alignment: WrapAlignment.center,
+                children: [
+                  ActionChip(label: const Text('+ Haut'), onPressed: () => _pickItem('Hauts')),
+                  ActionChip(label: const Text('+ Bas'), onPressed: () => _pickItem('Bas')),
+                  ActionChip(label: const Text('+ Chaussures'), onPressed: () => _pickItem('Chaussures')),
+                  ActionChip(label: const Text('+ Manteau'), onPressed: () => _pickItem('Manteaux')),
+                  ActionChip(label: const Text('+ Accessoire'), onPressed: () => _pickItem('Accessoires')),
+                ],
+              ),
 
               const SizedBox(height: 20),
               
@@ -134,8 +146,8 @@ class _OutfitCreatorScreenState extends State<OutfitCreatorScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton(
                     onPressed: _saveOutfit,
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
-                    child: const Text('Sauvegarder la tenue', style: TextStyle(fontSize: 18)),
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 50)),
+                    child: const Text('Sauvegarder', style: TextStyle(fontSize: 18)),
                   ),
             ],
           ),
