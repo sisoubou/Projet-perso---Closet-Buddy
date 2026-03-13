@@ -6,6 +6,8 @@ import '../models/clothing_item.dart';
 class StatisticsScreen extends StatelessWidget {
   final FirestoreService _firestoreService = FirestoreService();
 
+  StatisticsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,7 +34,9 @@ class StatisticsScreen extends StatelessWidget {
           } 
 
           final items = snapshot.data!;
+          
           final categoryData = _calculateCategoryStats(items);
+          final colorData = _calculateColorStats(items);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -41,6 +45,7 @@ class StatisticsScreen extends StatelessWidget {
               children: [
                 _buildSummaryCard(items.length),
                 const SizedBox(height: 30),
+                
                 const Text('Répartition par catégorie', 
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
@@ -48,14 +53,31 @@ class StatisticsScreen extends StatelessWidget {
                   height: 250,
                   child: PieChart(
                     PieChartData(
-                      sections: _buildChartSections(categoryData),
+                      sections: _buildChartSections(categoryData, useRealColors: false),
+                      centerSpaceRadius: 40,
+                      sectionsSpace: 2,
+                    ),
+                  ),
+                ),
+                _buildLegend(categoryData, isColor: false),
+
+                const SizedBox(height: 40),
+
+                const Text('Couleurs dominantes', 
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 250,
+                  child: PieChart(
+                    PieChartData(
+                      sections: _buildChartSections(colorData, useRealColors: true),
                       centerSpaceRadius: 40,
                       sectionsSpace: 2,
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
-                _buildLegend(categoryData),
+                _buildLegend(colorData, isColor: true),
               ],
             ),
           );
@@ -63,6 +85,7 @@ class StatisticsScreen extends StatelessWidget {
       ),
     );
   }
+
 
   Map<String, int> _calculateCategoryStats(List<ClothingItem> items) {
     Map<String, int> stats = {};
@@ -73,17 +96,48 @@ class StatisticsScreen extends StatelessWidget {
     return stats;
   }
 
-  Widget _buildSummaryCard(int total){
+  Map<String, int> _calculateColorStats(List<ClothingItem> items) {
+    Map<String, int> stats = {};
+    for (var item in items) {
+      if (item.colors.isEmpty) {
+        stats["Inconnu"] = (stats["Inconnu"] ?? 0) + 1;
+      } else {
+        for (var color in item.colors) {
+          stats[color] = (stats[color] ?? 0) + 1;
+        }
+      }
+    }
+    return stats;
+  }
+
+  Color _getColorFromString(String colorName) {
+    switch (colorName.toLowerCase()) {
+      case 'rouge': return Colors.red;
+      case 'bleu': return Colors.blue;
+      case 'vert': return Colors.green;
+      case 'jaune': return Colors.yellow;
+      case 'noir': return Colors.black;
+      case 'blanc': return Colors.white;
+      case 'gris': return Colors.grey;
+      case 'rose': return Colors.pink;
+      case 'violet': return Colors.purple;
+      case 'orange': return Colors.orange;
+      case 'marron': return Colors.brown;
+      default: return Colors.blueGrey;
+    }
+  }
+
+  Widget _buildSummaryCard(int total) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.purple[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.withValues(alpha: 0.2)),
+        border: Border.all(color: Colors.purple.withOpacity(0.2)),
       ),
       child: Column(
-        children:[
+        children: [
           const Text('Total de vêtements', style: TextStyle(fontSize: 18, color: Colors.purple)),
           Text('$total', style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.purple)),
         ],
@@ -91,14 +145,9 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 
-  List<PieChartSectionData> _buildChartSections(Map<String, int> data) {
-    final colors = [
-      Colors.purple, 
-      Colors.purpleAccent, 
-      Colors.deepPurple, 
-      Colors.deepPurpleAccent,
-      Colors.indigo,
-      Colors.purple[300],
+  List<PieChartSectionData> _buildChartSections(Map<String, int> data, {required bool useRealColors}) {
+    final defaultColors = [
+      Colors.purple, Colors.purpleAccent, Colors.deepPurple, Colors.indigo, Colors.purple[300]!,
     ];
     
     int index = 0;
@@ -108,38 +157,46 @@ class StatisticsScreen extends StatelessWidget {
       final value = entry.value.toDouble();
       final percentage = (value / totalItems) * 100;
       
-      final section = PieChartSectionData(
-        color: colors[index % colors.length],
+      final color = useRealColors ? _getColorFromString(entry.key) : defaultColors[index % defaultColors.length];
+
+      index++;
+      return PieChartSectionData(
+        color: color,
         value: value,
         title: '${percentage.toStringAsFixed(0)}%',
         radius: 60,
-        titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+        titleStyle: TextStyle(
+          fontSize: 14, 
+          fontWeight: FontWeight.bold, 
+          color: (useRealColors && entry.key.toLowerCase() == 'blanc') ? Colors.black : Colors.white
+        ),
       );
-      index++;
-      return section;
     }).toList();
   }
 
-  Widget _buildLegend(Map<String, int> data) {
-    final colors = [Colors.purple, Colors.purpleAccent, Colors.deepPurple, Colors.deepPurpleAccent, Colors.indigo];
+  Widget _buildLegend(Map<String, int> data, {required bool isColor}) {
+    final defaultColors = [Colors.purple, Colors.purpleAccent, Colors.deepPurple, Colors.indigo];
     int index = 0;
 
     return Wrap(
       spacing: 15,
       runSpacing: 10,
-      children: data.keys.map((cat) {
-        Color iconColor = colors[index % colors.length];
+      children: data.keys.map((key) {
+        Color iconColor = isColor ? _getColorFromString(key) : defaultColors[index % defaultColors.length];
         index++;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 14, 
-              height: 14, 
-              decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle),
+              width: 14, height: 14, 
+              decoration: BoxDecoration(
+                color: iconColor, 
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade300) 
+              ),
             ),
             const SizedBox(width: 6),
-            Text('$cat (${data[cat]})', style: const TextStyle(fontSize: 14)),
+            Text('$key (${data[key]})', style: const TextStyle(fontSize: 14)),
           ],
         );
       }).toList(),
