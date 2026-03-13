@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreService {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+
   final CollectionReference clothingCollection =
       FirebaseFirestore.instance.collection('clothing_items');
 
@@ -46,6 +49,32 @@ class FirestoreService {
             throw Exception('Unauthorized deletion attempt.');
         }
     }
+  }
+
+  Map<String, int> getCategoryDistribution(List<ClothingItem> items) {
+    Map<String, int> stats = {};
+    for (var item in items) {
+      stats[item.mainCategory] = (stats[item.mainCategory] ?? 0) + 1;
+    }
+    return stats;
+  }
+
+  Stream<List<ClothingItem>> getClothingItems() {
+    final user = auth.currentUser;
+
+    if (user == null) {
+      return Stream.error('Utilisateur non authentifié');
+    }
+    
+    return clothingCollection
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            return ClothingItem.fromJson(doc.id, doc.data() as Map<String, dynamic>);
+          })
+          .toList();
+    });
   }
 
   final CollectionReference outfitCollection =
