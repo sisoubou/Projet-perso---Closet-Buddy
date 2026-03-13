@@ -1,4 +1,4 @@
-
+import 'package:closet_buddy/screens/home_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -87,7 +87,7 @@ class ClosetBuddyApp extends StatelessWidget {
               password: '',
               wardrobe: [],
             );
-            return WardrobeScreen(user: localUser);
+            return HomeScreen(user: localUser);
           }
           return const AuthScreen();
         },

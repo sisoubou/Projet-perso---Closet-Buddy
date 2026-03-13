@@ -234,27 +234,11 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       appBar: AppBar(
         title: Text('Garde-robe de ${widget.user.name}'),
         actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'create_outfit':
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => OutfitCreatorScreen(user: widget.user)));
-                  break;
-                case 'view_outfits':
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => OutfitScreen(user: widget.user)));
-                  break;
-                case 'logout':
-                  _confirmSignOut();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'create_outfit', child: Row(children: [Icon(Icons.add), SizedBox(width: 8), Text('Créer une tenue')])),
-              const PopupMenuItem(value: 'view_outfits', child: Row(children: [Icon(Icons.style), SizedBox(width: 8), Text('Mes tenues')])),
-              const PopupMenuDivider(),
-              const PopupMenuItem(value: 'logout', child: Row(children: [Icon(Icons.logout), SizedBox(width: 8), Text('Se déconnecter')])),
-            ],
-          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _confirmSignOut,
+            tooltip: 'Se déconnecter',
+          )
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
