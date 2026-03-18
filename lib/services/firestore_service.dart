@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/calendar.dart';
 
 class FirestoreService {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -86,4 +87,24 @@ class FirestoreService {
       'userId': userId, 
     });
   }
+
+  final CollectionReference calendarCollection =
+        FirebaseFirestore.instance.collection('calendar');
+
+  Stream<List<Calendar>> getCalendarEntries() {
+    final user = auth.currentUser;
+    if (user == null) return Stream.value([]);
+
+    return calendarCollection
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Calendar.fromJson({...doc.data() as Map, 'id': doc.id}))
+            .toList());
+  }
+
+  Future<void> deleteCalendarEntry(String id) async {
+    await calendarCollection.doc(id).delete();
+  }
 }
+

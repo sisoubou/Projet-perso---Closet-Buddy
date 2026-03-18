@@ -1,3 +1,4 @@
+import 'package:closet_buddy/screens/calendar_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import 'wardrobe_screen.dart';
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
       WardrobeScreen(user: widget.user),
       OutfitScreen(user: widget.user),
       StatisticsScreen(),
+      CalendarScreen(),
     ];
   }
 
@@ -58,6 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.bar_chart),
             label: 'Stats',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'Calendrier',
+          )
         ],
       ),
     );
