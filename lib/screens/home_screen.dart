@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
       WardrobeScreen(user: widget.user),
       OutfitScreen(user: widget.user),
       StatisticsScreen(),
-      CalendarScreen(),
+      CalendarScreen(user: widget.user),
     ];
   }
 

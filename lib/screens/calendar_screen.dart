@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'outfit_creator_screen.dart';
 import '../services/firestore_service.dart';
 import '../models/calendar.dart';
+import '../models/outfit.dart';
+import '../models/user.dart'; 
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  final User user; 
+  const CalendarScreen({super.key, required this.user});
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -50,6 +55,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 firstDay: DateTime.utc(2024, 1, 1),
                 lastDay: DateTime.utc(2030, 12, 31),
                 focusedDay: _focusedDay,
+                locale: 'fr_FR',
                 selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                 onDaySelected: (selectedDay, focusedDay) {
                   setState(() {
@@ -82,9 +88,37 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Widget _buildEventList(List<Calendar> dayEvents) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selected = _normalizeDate(_selectedDay ?? _focusedDay);
+
     if (dayEvents.isEmpty) {
-      return const Center(child: Text("Pas de tenue prévue pour ce jour."));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Text(
+                selected.isBefore(today)
+                    ? "Vous n'avez pas rentré de tenue à cette date."
+                    : "Vous n'avez pas prévu de tenue à cette date.",
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, color: Colors.grey, fontStyle: FontStyle.italic),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => _showAddOptions(context, selected),
+              icon: const Icon(Icons.add),
+              label: const Text("Ajouter une tenue"),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white),
+            ),
+          ],
+        ),
+      );
     }
+    
     return ListView.builder(
       itemCount: dayEvents.length,
       itemBuilder: (context, index) {
@@ -99,6 +133,89 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _showAddOptions(BuildContext context, DateTime date) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.history, color: Colors.purple),
+            title: const Text("Choisir une tenue existante"),
+            onTap: () {
+              Navigator.pop(ctx);
+              _showExistingOutfitsPicker(context, date);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.add_circle_outline, color: Colors.purple),
+            title: const Text("Créer une nouvelle tenue"),
+            onTap: () {
+              Navigator.pop(ctx);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => OutfitCreatorScreen(user: widget.user)));
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showExistingOutfitsPicker(BuildContext context, DateTime date) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        padding: const EdgeInsets.only(top: 16),
+        child: Column(
+          children: [
+            const Text("Mes Tenues", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Divider(),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('outfits')
+                    .where('userId', isEqualTo: widget.user.id)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                  final docs = snapshot.data!.docs;
+                  
+                  if (docs.isEmpty) return const Center(child: Text("Aucune tenue enregistrée"));
+
+                  return ListView.builder(
+                    itemCount: docs.length,
+                    itemBuilder: (context, i) {
+                      final outfit = Outfit.fromJson(docs[i].data());
+                      return ListTile(
+                        title: Text(outfit.name),
+                        subtitle: Text("${outfit.items.length} articles"),
+                        onTap: () async {
+                          final newEntry = Calendar(
+                            id: DateTime.now().millisecondsSinceEpoch.toString(),
+                            userId: widget.user.id,
+                            date: date,
+                            outfitId: outfit.id,
+                          );
+                          await FirebaseFirestore.instance.collection('calendar').doc(newEntry.id).set(newEntry.toJson());
+                          if (!mounted) return;
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tenue ajoutée au calendrier !")));
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
