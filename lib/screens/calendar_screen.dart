@@ -5,10 +5,11 @@ import 'outfit_creator_screen.dart';
 import '../services/firestore_service.dart';
 import '../models/calendar.dart';
 import '../models/outfit.dart';
-import '../models/user.dart'; 
+import '../models/user.dart';
+import '../widgets/calendar_outfit.dart';
 
 class CalendarScreen extends StatefulWidget {
-  final User user; 
+  final User user;
   const CalendarScreen({super.key, required this.user});
 
   @override
@@ -28,8 +29,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mon calendrier', 
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text('Mon calendrier',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: Colors.purple,
         elevation: 0,
       ),
@@ -39,9 +40,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           final calendarEntries = snapshot.data ?? [];
-          
+
           Map<DateTime, List<Calendar>> events = {};
           for (var entry in calendarEntries) {
             final date = _normalizeDate(entry.date);
@@ -118,19 +119,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
       );
     }
-    
+
     return ListView.builder(
       itemCount: dayEvents.length,
       itemBuilder: (context, index) {
         final entry = dayEvents[index];
-        return ListTile(
-          leading: const Icon(Icons.style, color: Colors.purple),
-          title: const Text("Tenue planifiée"),
-          subtitle: Text("ID Tenue: ${entry.outfitId}"),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () => _firestoreService.deleteCalendarEntry(entry.id),
-          ),
+        return CalendarOutfit(
+          outfitId: entry.outfitId,
+          onDelete: () => _firestoreService.deleteCalendarEntry(entry.id),
         );
       },
     );
@@ -185,27 +181,36 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                   final docs = snapshot.data!.docs;
-                  
+
                   if (docs.isEmpty) return const Center(child: Text("Aucune tenue enregistrée"));
 
                   return ListView.builder(
                     itemCount: docs.length,
                     itemBuilder: (context, i) {
-                      final outfit = Outfit.fromJson(docs[i].data());
+                      final outfit = Outfit.fromJson(docs[i].data() as Map<String, dynamic>);
                       return ListTile(
+                        leading: const Icon(Icons.style, color: Colors.purple),
                         title: Text(outfit.name),
                         subtitle: Text("${outfit.items.length} articles"),
                         onTap: () async {
+                          final normalizedDate = _normalizeDate(date);
                           final newEntry = Calendar(
                             id: DateTime.now().millisecondsSinceEpoch.toString(),
                             userId: widget.user.id,
-                            date: date,
+                            date: normalizedDate,
                             outfitId: outfit.id,
                           );
-                          await FirebaseFirestore.instance.collection('calendar').doc(newEntry.id).set(newEntry.toJson());
+
+                          await FirebaseFirestore.instance
+                              .collection('calendar')
+                              .doc(newEntry.id)
+                              .set(newEntry.toJson());
+
                           if (!mounted) return;
                           Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tenue ajoutée au calendrier !")));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Tenue ajoutée au calendrier !")),
+                          );
                         },
                       );
                     },
