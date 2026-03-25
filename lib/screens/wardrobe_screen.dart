@@ -9,8 +9,6 @@ import '../models/clothing_item.dart';
 import 'add_clothing_screen.dart';
 import '../widgets/clothing_card.dart';
 import 'edit_clothing_screen.dart';
-import 'outfit_screen.dart';
-import 'outfit_creator_screen.dart';
 
 class WardrobeScreen extends StatefulWidget {
   final User user;

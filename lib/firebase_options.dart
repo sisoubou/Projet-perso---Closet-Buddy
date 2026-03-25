@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'closetbuddy27.firebasestorage.app',
     measurementId: 'G-DM6DEZ25WF',
   );
+
 }

@@ -24,9 +24,9 @@ class AddClothingScreenState extends State<AddClothingScreen> {
   String _name = '';
   String _mainCategory = '';
   String _subCategory = '';
-  List<String> _selectedColors = [];
+  final List<String> _selectedColors = [];
   String _selectedSeason = 'Toutes saisons';
-  List<String> _selectedOccasions = [''];
+  final List<String> _selectedOccasions = [''];
   File? _imageFile;
   List<String> _subCategoryOptions = [];
   final List<String> _mainCategories = ['Hauts', 'Manteaux', 'Bas', 'Robes & Combinaisons', 'Chaussures', 'Accessoires'];
@@ -327,7 +327,7 @@ class AddClothingScreenState extends State<AddClothingScreen> {
               ),
 
               DropdownButtonFormField<String>(
-                value: _selectedSeason,
+                initialValue: _selectedSeason,
                 decoration: const InputDecoration(labelText: 'Saison'),
                 items: _seasonOptions.map((season) {
                   return DropdownMenuItem(

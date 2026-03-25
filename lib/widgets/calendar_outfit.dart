@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/outfit.dart';
-import '../models/clothing_item.dart';
 
 class CalendarOutfit extends StatelessWidget {
   final String outfitId;

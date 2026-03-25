@@ -5,9 +5,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/foundation.dart';
 
 import 'screens/auth_screen.dart';
-import 'screens/wardrobe_screen.dart';
 import 'models/user.dart';
 import 'firebase_options.dart';
 

@@ -213,7 +213,7 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                     ),
 
                     DropdownButtonFormField<String>(
-                      value: _mainCategory.isEmpty ? null : _mainCategory,
+                      initialValue: _mainCategory.isEmpty ? null : _mainCategory,
                       decoration: const InputDecoration(labelText: 'Catégorie principale'),
                       items: _mainCategories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
                       onChanged: (val) {
@@ -227,7 +227,7 @@ class EditClothingScreenState extends State<EditClothingScreen> {
 
                     if (_subCategoryOptions.isNotEmpty)
                       DropdownButtonFormField<String>(
-                        value: _subCategory.isEmpty ? null : _subCategory,
+                        initialValue: _subCategory.isEmpty ? null : _subCategory,
                         decoration: const InputDecoration(labelText: 'Sous-catégorie'),
                         items: _subCategoryOptions.map((sub) => DropdownMenuItem(value: sub, child: Text(sub))).toList(),
                         onChanged: (val) => setState(() => _subCategory = val ?? ''),
@@ -246,8 +246,11 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                           checkmarkColor: Colors.black,
                           onSelected: (bool selected) {
                             setState(() {
-                              if (selected) _selectedColors.add(colorName);
-                              else _selectedColors.remove(colorName);
+                              if (selected) {
+                                _selectedColors.add(colorName);
+                              } else {
+                                _selectedColors.remove(colorName);
+                              }
                             });
                           },
                           backgroundColor: Colors.grey[100],
@@ -268,8 +271,11 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                           selected: isSelected,
                           onSelected: (bool selected) {
                             setState(() {
-                              if (selected) _selectedOccasions.add(entry.key);
-                              else _selectedOccasions.remove(entry.key);
+                              if (selected) {
+                                _selectedOccasions.add(entry.key);
+                              } else {
+                                _selectedOccasions.remove(entry.key);
+                              }
                             });
                           },
                         );
@@ -277,7 +283,7 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                     ),
 
                     DropdownButtonFormField<String>(
-                      value: _season,
+                      initialValue: _season,
                       decoration: const InputDecoration(labelText: 'Saison'),
                       items: _seasonOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                       onChanged: (val) => setState(() => _season = val ?? 'Toutes saisons'),
