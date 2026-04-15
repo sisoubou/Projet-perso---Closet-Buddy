@@ -8,6 +8,7 @@ class ClothingItem {
   final List<String> colors;
   final List<String> occasions;
   final String season;
+  final int wearCount;
 
   ClothingItem({
     required this.id,
@@ -19,6 +20,7 @@ class ClothingItem {
     this.colors = const [],
     this.occasions = const ['casual'],
     this.season = 'Toutes saisons',
+    this.wearCount = 0,
   });
 
   Map<String, dynamic> toJson() => {
@@ -31,6 +33,7 @@ class ClothingItem {
         'colors': colors,
         'occasions': occasions,
         'season': season,
+        'wearCount': wearCount,
       };
 
   factory ClothingItem.fromJson(String id, dynamic json) {
@@ -63,6 +66,7 @@ class ClothingItem {
       colors: parseList(data['colors'], 'color'),
       occasions: parseList(data['occasions'], 'occasion'),
       season: (data['season'] ?? 'Toutes saisons') as String,
+      wearCount: (data['wearCount'] ?? 0) as int,
     );
   }
 
@@ -75,6 +79,7 @@ class ClothingItem {
     List<String>? colors,
     List<String>? occasions,
     String? season,
+    int? wearCount,
   }) {
     return ClothingItem(
       id: id,
@@ -86,6 +91,7 @@ class ClothingItem {
       colors: colors ?? this.colors,
       occasions: occasions ?? this.occasions,
       season: season ?? this.season,
+      wearCount: wearCount ?? this.wearCount,
     );
   }
 }

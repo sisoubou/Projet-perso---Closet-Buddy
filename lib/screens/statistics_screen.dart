@@ -35,8 +35,13 @@ class StatisticsScreen extends StatelessWidget {
 
           final items = snapshot.data!;
           
+          // Préparation des données pour les graphiques
           final categoryData = _calculateCategoryStats(items);
           final colorData = _calculateColorStats(items);
+
+          // Logique pour les pièces les plus portées (Top 5)
+          final topItems = items.where((item) => item.wearCount > 0).toList();
+          topItems.sort((a, b) => b.wearCount.compareTo(a.wearCount));
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -76,8 +81,47 @@ class StatisticsScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
                 _buildLegend(colorData, isColor: true),
+
+                const SizedBox(height: 40),
+
+                const Text('Tes pièces les plus portées', 
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+
+                if (topItems.isEmpty) 
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text('Aucune pièce n\'a encore été portée. Utilise le calendrier pour voir tes favoris !', 
+                      style: TextStyle(fontSize: 14, color: Colors.grey, fontStyle: FontStyle.italic)),
+                  )
+                else
+                  ...topItems.take(5).map((item) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        image: item.imageUrl.isNotEmpty 
+                          ? DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover)
+                          : null,
+                        color: Colors.grey[200],
+                      ),
+                      child: item.imageUrl.isEmpty ? const Icon(Icons.checkroom) : null,
+                    ),
+                    title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(item.subCategory),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.purple[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('${item.wearCount} fois', 
+                        style: const TextStyle(color: Colors.purple, fontWeight: FontWeight.bold)),
+                    ),
+                  )),
               ],
             ),
           );
@@ -86,7 +130,7 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 
-
+  // ... (Garder vos méthodes existantes : _calculateCategoryStats, _calculateColorStats, etc.)
   Map<String, int> _calculateCategoryStats(List<ClothingItem> items) {
     Map<String, int> stats = {};
     for (var item in items) {
@@ -123,6 +167,7 @@ class StatisticsScreen extends StatelessWidget {
       case 'violet': return Colors.purple;
       case 'orange': return Colors.orange;
       case 'marron': return Colors.brown;
+      case 'beige': return const Color.fromARGB(255, 216, 163, 143);
       default: return Colors.blueGrey;
     }
   }
@@ -151,7 +196,7 @@ class StatisticsScreen extends StatelessWidget {
     ];
     
     int index = 0;
-    int totalItems = data.values.reduce((a, b) => a + b);
+    int totalItems = data.values.isEmpty ? 1 : data.values.reduce((a, b) => a + b);
 
     return data.entries.map((entry) {
       final value = entry.value.toDouble();

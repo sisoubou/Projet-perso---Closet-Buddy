@@ -106,5 +106,13 @@ class FirestoreService {
   Future<void> deleteCalendarEntry(String id) async {
     await calendarCollection.doc(id).delete();
   }
+
+  Future<void> incrementWearCount(List<String> itemIds) async {
+    for (String id in itemIds) {
+      await clothingCollection.doc(id).update({
+        'wearCount': FieldValue.increment(1),
+      });
+    }
+  }
 }
 

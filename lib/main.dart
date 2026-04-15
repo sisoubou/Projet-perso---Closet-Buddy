@@ -19,13 +19,13 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await FirebaseAppCheck.instance.activate(
+ await FirebaseAppCheck.instance.activate(
     providerAndroid: kReleaseMode
         ? AndroidPlayIntegrityProvider()
         : AndroidDebugProvider(),
     providerApple: kReleaseMode
         ? AppleDeviceCheckProvider()
-        : AppleDebugProvider(),
+         : AppleDebugProvider(),
   );
 
   final token = await FirebaseAppCheck.instance.getToken(true);

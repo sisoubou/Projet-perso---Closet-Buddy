@@ -206,6 +206,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               .doc(newEntry.id)
                               .set(newEntry.toJson());
 
+                          final List<String> itemIds = outfit.items.map((item) => item.id).toList();
+                          await _firestoreService.incrementWearCount(itemIds);
+
                           if (!mounted) return;
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
