@@ -25,6 +25,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   String _filterColor = 'Tout';
   String _filterOccasion = 'Tout';
   List<String> _subCategoryOptions = [];
+  
+  // Variable d'état pour basculer entre archives et vue normale
+  bool _showArchives = false;
 
   final List<String> _mainCategories = ['Hauts', 'Manteaux', 'Bas', 'Robes & Combinaisons', 'Chaussures', 'Accessoires'];
   final Map<String, List<String>> _subCategoriesMap = {
@@ -154,8 +157,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
 
     final tops = allItems.where((item) => item.mainCategory == 'Hauts' && targetSeasons.contains(item.season)).toList();
     final bottoms = allItems.where((item) => item.mainCategory == 'Bas' && targetSeasons.contains(item.season)).toList();
-    final shoes = allItems.where((item) => item.mainCategory == 'Chaussures' && targetSeasons.contains(item.season)).toList();
-  
+    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -230,8 +232,17 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Garde-robe de ${widget.user.name}'),
+        title: Text(_showArchives ? 'Mes Archives' : 'Garde-robe de ${widget.user.name}'),
         actions: [
+          IconButton(
+            icon: Icon(_showArchives ? Icons.checkroom : Icons.archive),
+            onPressed: () {
+              setState(() {
+                _showArchives = !_showArchives;
+              });
+            },
+            tooltip: _showArchives ? 'Retour à la garde-robe' : 'Voir les archives',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _confirmSignOut,
@@ -254,16 +265,18 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
           }).toList();
 
           final filteredItems = allItems.where((item) {
+             final archiveCondition = _showArchives ? item.isArchived : !item.isArchived;
              final mainOk = _filterMainCategory == _allOption || item.mainCategory == _filterMainCategory;
              final subOk = _filterSubCategory == _allOption || item.subCategory == _filterSubCategory;
              final colorOk = _filterColor == _allOption || item.colors.contains(_filterColor);
              final occasionOk = _filterOccasion == _allOption || item.occasions.contains(_filterOccasion);
-             return mainOk && subOk && colorOk && occasionOk;
+             return archiveCondition && mainOk && subOk && colorOk && occasionOk;
           }).toList();
 
           return Column(
             children: [
-              _buildSuggestionCard(allItems), 
+              // N'afficher la météo que si on n'est PAS dans les archives
+              if (!_showArchives) _buildSuggestionCard(allItems), 
 
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,

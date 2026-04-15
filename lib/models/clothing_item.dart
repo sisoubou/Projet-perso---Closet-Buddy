@@ -9,6 +9,7 @@ class ClothingItem {
   final List<String> occasions;
   final String season;
   final int wearCount;
+  final bool isArchived;
 
   ClothingItem({
     required this.id,
@@ -21,6 +22,7 @@ class ClothingItem {
     this.occasions = const ['casual'],
     this.season = 'Toutes saisons',
     this.wearCount = 0,
+    this.isArchived = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -34,6 +36,7 @@ class ClothingItem {
         'occasions': occasions,
         'season': season,
         'wearCount': wearCount,
+        'isArchived': isArchived,
       };
 
   factory ClothingItem.fromJson(String id, dynamic json) {
@@ -67,6 +70,7 @@ class ClothingItem {
       occasions: parseList(data['occasions'], 'occasion'),
       season: (data['season'] ?? 'Toutes saisons') as String,
       wearCount: (data['wearCount'] ?? 0) as int,
+      isArchived: (data['isArchived'] ?? false) as bool,
     );
   }
 
@@ -80,6 +84,7 @@ class ClothingItem {
     List<String>? occasions,
     String? season,
     int? wearCount,
+    bool? isArchived,
   }) {
     return ClothingItem(
       id: id,
@@ -92,6 +97,7 @@ class ClothingItem {
       occasions: occasions ?? this.occasions,
       season: season ?? this.season,
       wearCount: wearCount ?? this.wearCount,
+      isArchived: isArchived ?? this.isArchived,
     );
   }
 }

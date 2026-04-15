@@ -25,7 +25,7 @@ Future<void> main() async {
         : AndroidDebugProvider(),
     providerApple: kReleaseMode
         ? AppleDeviceCheckProvider()
-         : AppleDebugProvider(),
+        : AppleDebugProvider(),
   );
 
   final token = await FirebaseAppCheck.instance.getToken(true);

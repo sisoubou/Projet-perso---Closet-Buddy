@@ -37,6 +37,7 @@ class EditClothingScreenState extends State<EditClothingScreen> {
   late List<String> _selectedColors;
   late List<String> _selectedOccasions;
   late String _season;
+  late bool _isArchived;
   File? _imageFile;
 
   List<String> _subCategoryOptions = [];
@@ -85,6 +86,7 @@ class EditClothingScreenState extends State<EditClothingScreen> {
     _selectedColors = widget.clothingItem.colors;
     _selectedOccasions = widget.clothingItem.occasions;
     _season = widget.clothingItem.season;
+    _isArchived = widget.clothingItem.isArchived;
   }
 
   Future<void> _pickImage() async {
@@ -137,6 +139,7 @@ class EditClothingScreenState extends State<EditClothingScreen> {
       occasions: _selectedOccasions,
       season: _season,
       imageUrl: imageUrl,
+      isArchived: _isArchived,
     );
 
     await FirestoreService().updateClothingItem(updatedItem);
@@ -300,6 +303,13 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                     TextButton.icon(icon: const Icon(Icons.photo), label: const Text('Changer l\'image'), onPressed: _pickImage),
                     const SizedBox(height: 20),
                     ElevatedButton(onPressed: _saveForm, child: const Text('Sauvegarder les modifications')),
+
+                    SwitchListTile(
+                      title: const Text('Archiver ce vêtement'),
+                      subtitle: const Text('L\'archivage permet de masquer ce vêtement dans votre garde-robe sans le supprimer.'),
+                      value: _isArchived,
+                      onChanged: (bool value) => setState(() => _isArchived = value),
+                    ),
                   ],
                 ),
               ),

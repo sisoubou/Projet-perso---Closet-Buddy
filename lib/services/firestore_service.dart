@@ -21,6 +21,8 @@ class FirestoreService {
       'occasions': item.occasions,
       'imageUrl': item.imageUrl,
       'userId': userId,
+      'wearCount': item.wearCount,
+      'isArchived': item.isArchived,
     });
   }
 
@@ -33,6 +35,8 @@ class FirestoreService {
       'season': item.season,
       'occasions': item.occasions,
       'imageUrl': item.imageUrl,
+      'wearCount': item.wearCount,
+      'isArchived': item.isArchived,
     });
   }
 
