@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/calendar.dart';
+import '../models/collection.dart';
 
 class FirestoreService {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -118,5 +119,35 @@ class FirestoreService {
       });
     }
   }
-}
 
+  final CollectionReference _collectionsRef =
+      FirebaseFirestore.instance.collection('collections');
+
+  Stream<List<OutfitCollection>> getCollections() {
+    final user = auth.currentUser;
+    if (user == null) return Stream.value([]);
+
+    return _collectionsRef
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              return OutfitCollection.fromJson(doc.id, doc.data());
+            }).toList());
+  }
+
+  Future<void> createCollection(OutfitCollection collection) async {
+    await _collectionsRef.doc(collection.id).set(collection.toJson());
+  }
+
+  Future<void> addOutfitToCollection(String collectionId, String outfitId) async {
+    await _collectionsRef.doc(collectionId).update({
+      'outfitIds': FieldValue.arrayUnion([outfitId])
+    });
+  }
+
+  Future<void> removeOutfitFromCollection(String collectionId, String outfitId) async {
+    await _collectionsRef.doc(collectionId).update({
+      'outfitIds': FieldValue.arrayRemove([outfitId])
+    });
+  }
+}
