@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,6 +9,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 
 import '../models/user.dart';
 import '../models/clothing_item.dart';
+import '../theme/app_theme.dart';
 
 class AddClothingScreen extends StatefulWidget {
   final User user;
@@ -26,9 +28,11 @@ class AddClothingScreenState extends State<AddClothingScreen> {
   String _subCategory = '';
   final List<String> _selectedColors = [];
   String _selectedSeason = 'Toutes saisons';
-  final List<String> _selectedOccasions = [''];
+  final List<String> _selectedOccasions = [];
   File? _imageFile;
   List<String> _subCategoryOptions = [];
+  bool _isSaving = false;
+
   final List<String> _mainCategories = ['Hauts', 'Manteaux', 'Bas', 'Robes & Combinaisons', 'Chaussures', 'Accessoires'];
   final Map<String, List<String>> _subCategoriesMap = {
     'Hauts': ['Tops', 'T-shirts', 'Pulls', 'Chemises', 'Sweats', 'Tops de sport'],
@@ -64,7 +68,6 @@ class AddClothingScreenState extends State<AddClothingScreen> {
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
-
     if (picked != null) {
       setState(() => _imageFile = File(picked.path));
     }
@@ -76,28 +79,23 @@ class AddClothingScreenState extends State<AddClothingScreen> {
 
     final fb_auth.User? currentUser = fb_auth.FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Aucun utilisateur n'est connecté.")),
       );
       return;
     }
 
+    setState(() => _isSaving = true);
     String imageUrl = '';
 
     if (_imageFile != null) {
-      debugPrint('Current user uid: ${currentUser.uid}');
       final appCheckToken = await FirebaseAppCheck.instance.getToken(false);
-      final appCheckTokenPresent =
-          appCheckToken != null && appCheckToken.toString().isNotEmpty && appCheckToken.toString() != 'null';
-      debugPrint('AppCheck token present: $appCheckTokenPresent');
+      debugPrint('AppCheck token present: ${appCheckToken != null}');
 
       try {
-        
         final storage = FirebaseStorage.instanceFor(
           bucket: 'gs://closetbuddy27.firebasestorage.app',
         );
-
         final storageRef = storage
             .ref()
             .child('users')
@@ -105,75 +103,22 @@ class AddClothingScreenState extends State<AddClothingScreen> {
             .child('wardrobe')
             .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
 
-        debugPrint('Bucket utilisé: ${storageRef.bucket}');
-        debugPrint('Chemin complet: ${storageRef.fullPath}');
-
         final localSize = await _imageFile!.length();
-        debugPrint('Taille du fichier local: $localSize bytes');
-        if (localSize == 0) {
-          throw Exception('Fichier local vide');
-        }
+        if (localSize == 0) throw Exception('Fichier local vide');
 
         final metadata = SettableMetadata(contentType: 'image/jpeg');
-
-        final TaskSnapshot snapshot = await storageRef.putFile(_imageFile!, metadata).whenComplete(() {});
-        debugPrint('Upload completed: state=${snapshot.state}, bytes=${snapshot.bytesTransferred}/${snapshot.totalBytes}');
-
-        final meta = await storageRef.getMetadata();
-        debugPrint('getMetadata success: fullPath=${meta.fullPath}, size=${meta.size}');
-
-        imageUrl = await storageRef.getDownloadURL();
-        debugPrint('Download URL: $imageUrl');
-
-        debugPrint('Upload completed: state=${snapshot.state}, bytesTransferred=${snapshot.bytesTransferred}/${snapshot.totalBytes}');
-        debugPrint('Snapshot ref fullPath: ${snapshot.ref.fullPath}');
-        debugPrint('Snapshot ref bucket: ${snapshot.ref.bucket}');
-        try {
-          final meta = await snapshot.ref.getMetadata();
-          debugPrint('getMetadata success: fullPath=${meta.fullPath}, size=${meta.size}');
-        } on FirebaseException catch (metaErr) {
-          debugPrint('getMetadata failed: ${metaErr.code} - ${metaErr.message}');
-        } catch (metaErr) {
-          debugPrint('getMetadata unexpected error: $metaErr');
-        }
-
-        try {
-          imageUrl = await snapshot.ref.getDownloadURL();
-          debugPrint('Download URL: $imageUrl');
-        } on FirebaseException catch (e) {
-          if (e.code == 'object-not-found') {
-            debugPrint('getDownloadURL returned object-not-found; retrying...');
-            bool got = false;
-            for (int i = 0; i < 5; i++) {
-              await Future.delayed(const Duration(milliseconds: 500));
-              try {
-                imageUrl = await snapshot.ref.getDownloadURL();
-                got = true;
-                debugPrint('Download URL after retry: $imageUrl');
-                break;
-              } catch (e) {
-                // ignore and retry
-              }
-            }
-            if (!got) rethrow;
-          } else {
-            rethrow;
-          }
-        }
-      } on FirebaseException catch (e, stack) {
-        debugPrint("Storage FirebaseException: ${e.code} - ${e.message}");
-        debugPrint(stack.toString());
-
+        final TaskSnapshot snapshot = await storageRef.putFile(_imageFile!, metadata);
+        imageUrl = await snapshot.ref.getDownloadURL();
+      } on FirebaseException catch (e) {
         if (!mounted) return;
+        setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur upload image : ${e.message ?? e.code}')),
         );
         return;
-      } catch (e, stack) {
-        debugPrint("Erreur upload image : $e");
-        debugPrint(stack.toString());
-
+      } catch (e) {
         if (!mounted) return;
+        setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Erreur lors de l'envoi de l'image.")),
         );
@@ -187,7 +132,7 @@ class AddClothingScreenState extends State<AddClothingScreen> {
       name: _name,
       mainCategory: _mainCategory,
       subCategory: _subCategory,
-      imageUrl: imageUrl.isNotEmpty ? imageUrl : '',
+      imageUrl: imageUrl,
       colors: _selectedColors,
       occasions: _selectedOccasions,
       season: _selectedSeason,
@@ -203,16 +148,15 @@ class AddClothingScreenState extends State<AddClothingScreen> {
         "colors": newItem.colors,
         "userId": currentUser.uid,
         "occasions": newItem.occasions,
-        "season" : newItem.season,
+        "season": newItem.season,
       });
 
       widget.onAdd(newItem);
-
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
-      debugPrint("Erreur Firestore : $e");
       if (!mounted) return;
+      setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Erreur lors de l'enregistrement.")),
       );
@@ -222,147 +166,339 @@ class AddClothingScreenState extends State<AddClothingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ajouter un vêtement')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Nom du vêtement'),
-                validator: (v) =>
-                    v == null || v.isEmpty ? "Nom requis" : null,
-                onSaved: (v) => _name = v!,
-              ),
-
-              Text('Couleurs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: _colorOptions.map((colorName) {
-                  final isSelected = _selectedColors.contains(colorName);
-                  return FilterChip(
-                    label: Text(colorName),
-                    selected: isSelected,
-                    selectedColor: _colorMap[colorName]!.withOpacity(0.5),
-                    checkmarkColor: Colors.black,
-                    onSelected: (bool selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedColors.add(colorName);
-                        } else {
-                          _selectedColors.remove(colorName);
-                        }
-                      });
-                    },
-                    backgroundColor: Colors.grey[100],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: isSelected ? Colors.black : Colors.grey.shade300),
+      appBar: AppBar(
+        title: Text('Nouveau vêtement',
+            style: GoogleFonts.playfairDisplay(
+                fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+      ),
+      body: _isSaving
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                children: [
+                  _ImagePickerCard(imageFile: _imageFile, onTap: _pickImage),
+                  const SizedBox(height: 24),
+                  _section(
+                    title: 'Informations',
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          decoration: const InputDecoration(labelText: 'Nom du vêtement'),
+                          validator: (v) => v == null || v.isEmpty ? 'Nom requis' : null,
+                          onSaved: (v) => _name = v!,
+                        ),
+                        const SizedBox(height: 14),
+                        DropdownButtonFormField<String>(
+                          initialValue: _mainCategory.isEmpty ? null : _mainCategory,
+                          decoration: const InputDecoration(labelText: 'Catégorie principale'),
+                          items: _mainCategories.map((cat) {
+                            return DropdownMenuItem(value: cat, child: Text(cat));
+                          }).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              _mainCategory = val ?? '';
+                              _subCategoryOptions = _subCategoriesMap[_mainCategory] ?? [];
+                              _subCategory = '';
+                            });
+                          },
+                          validator: (v) => v == null || v.isEmpty ? 'Choisissez une catégorie' : null,
+                        ),
+                        if (_subCategoryOptions.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          DropdownButtonFormField<String>(
+                            initialValue: _subCategory.isEmpty ? null : _subCategory,
+                            decoration: const InputDecoration(labelText: 'Sous-catégorie'),
+                            items: _subCategoryOptions.map((sub) {
+                              return DropdownMenuItem(value: sub, child: Text(sub));
+                            }).toList(),
+                            onChanged: (val) => setState(() => _subCategory = val ?? ''),
+                            validator: (v) => v == null || v.isEmpty ? 'Choisissez une sous-catégorie' : null,
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+                        DropdownButtonFormField<String>(
+                          initialValue: _selectedSeason,
+                          decoration: const InputDecoration(labelText: 'Saison'),
+                          items: _seasonOptions.map((season) {
+                            return DropdownMenuItem(value: season, child: Text(season));
+                          }).toList(),
+                          onChanged: (val) => setState(() => _selectedSeason = val ?? 'Toutes saisons'),
+                        ),
+                      ],
                     ),
-                    avatar: CircleAvatar(backgroundColor: _colorMap[colorName], radius: 10),
-                  );
-                }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+                  _section(
+                    title: 'Couleurs',
+                    subtitle: _selectedColors.isEmpty ? 'Sélectionnez une ou plusieurs couleurs' : null,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 10,
+                      children: _colorOptions.map((colorName) {
+                        return _ColorChip(
+                          label: colorName,
+                          color: _colorMap[colorName]!,
+                          selected: _selectedColors.contains(colorName),
+                          onTap: () {
+                            setState(() {
+                              if (_selectedColors.contains(colorName)) {
+                                _selectedColors.remove(colorName);
+                              } else {
+                                _selectedColors.add(colorName);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _section(
+                    title: 'Occasions',
+                    subtitle: _selectedOccasions.isEmpty ? 'Quand porterez-vous ce vêtement ?' : null,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 10,
+                      children: _occasionMap.entries.map((entry) {
+                        return _TagChip(
+                          label: entry.value,
+                          selected: _selectedOccasions.contains(entry.key),
+                          onTap: () {
+                            setState(() {
+                              if (_selectedOccasions.contains(entry.key)) {
+                                _selectedOccasions.remove(entry.key);
+                              } else {
+                                _selectedOccasions.add(entry.key);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
               ),
-
-              DropdownButtonFormField<String>(
-                initialValue: _mainCategory.isEmpty ? null : _mainCategory,
-                decoration: const InputDecoration(labelText: 'Catégorie principale'),
-                items: _mainCategories.map((cat) {
-                  return DropdownMenuItem(
-                    value: cat,
-                    child: Text(cat),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  setState(() {
-                    _mainCategory = val ?? '';
-                    _subCategoryOptions = _subCategoriesMap[_mainCategory] ?? [];
-                    _subCategory = '';
-                  });
-                },
-                validator: (v) => v == null || v.isEmpty ? 'Choisissez une catégorie' : null,
-              ),
-
-              if (_subCategoryOptions.isNotEmpty)
-                DropdownButtonFormField<String>(
-                  initialValue: _subCategory.isEmpty ? null : _subCategory,
-                  decoration: const InputDecoration(labelText: 'Sous-catégorie'),
-                  items: _subCategoryOptions.map((sub) {
-                    return DropdownMenuItem(
-                      value: sub,
-                      child: Text(sub),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _subCategory = val ?? '';
-                    });
-                  },
-                  validator: (v) => v == null || v.isEmpty ? 'Choisissez une sous-catégorie' : null,
+            ),
+      bottomNavigationBar: _isSaving
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                child: ElevatedButton(
+                  onPressed: _saveForm,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 54),
+                  ),
+                  child: const Text('Ajouter à ma garde-robe'),
                 ),
-
-              const SizedBox(height: 16),
-              const Text('Occasions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: _occasionMap.entries.map((entry) {
-                  final isSelected = _selectedOccasions.contains(entry.key);
-                  return FilterChip(
-                    label: Text(entry.value),
-                    selected: isSelected,
-                    onSelected: (bool selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedOccasions.add(entry.key);
-                        } else {
-                          _selectedOccasions.remove(entry.key);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
               ),
+            ),
+    );
+  }
 
-              DropdownButtonFormField<String>(
-                initialValue: _selectedSeason,
-                decoration: const InputDecoration(labelText: 'Saison'),
-                items: _seasonOptions.map((season) {
-                  return DropdownMenuItem(
-                    value: season,
-                    child: Text(season),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  setState(() {
-                    _selectedSeason = val ?? 'Toutes saisons';
-                  });
-                },
-              ),
+  Widget _section({required String title, String? subtitle, required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: GoogleFonts.playfairDisplay(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(subtitle,
+                style: GoogleFonts.lato(fontSize: 12, color: AppColors.textSecondary)),
+          ],
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+}
 
-              const SizedBox(height: 20),
+class _ImagePickerCard extends StatelessWidget {
+  final File? imageFile;
+  final VoidCallback onTap;
 
-              _imageFile != null
-                  ? Image.file(_imageFile!, height: 150, fit: BoxFit.cover)
-                  : const Text("Aucune image sélectionnée"),
+  const _ImagePickerCard({required this.imageFile, required this.onTap});
 
-              TextButton.icon(
-                icon: const Icon(Icons.photo),
-                label: const Text("Choisir une image"),
-                onPressed: _pickImage,
-              ),
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 220,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.divider,
+            width: imageFile == null ? 1.5 : 0,
+            style: imageFile == null ? BorderStyle.solid : BorderStyle.none,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: imageFile != null
+              ? Stack(
+                  children: [
+                    Positioned.fill(child: Image.file(imageFile!, fit: BoxFit.cover)),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.edit_outlined, size: 14, color: AppColors.primary),
+                            const SizedBox(width: 4),
+                            Text('Changer',
+                                style: GoogleFonts.lato(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: const BoxDecoration(
+                        color: AppColors.surfaceAlt,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.add_photo_alternate_outlined,
+                          color: AppColors.primary, size: 28),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Ajouter une photo',
+                        style: GoogleFonts.playfairDisplay(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary)),
+                    const SizedBox(height: 4),
+                    Text('Appuyez pour choisir depuis votre galerie',
+                        style: GoogleFonts.lato(
+                            fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
 
-              const SizedBox(height: 20),
+class _ColorChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
 
-              ElevatedButton(
-                onPressed: _saveForm,
-                child: const Text("Ajouter"),
-              ),
-            ],
+  const _ColorChip({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.divider,
           ),
         ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.divider, width: 0.5),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(label,
+                style: GoogleFonts.lato(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: selected ? Colors.white : AppColors.textPrimary)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TagChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _TagChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? AppColors.primary : AppColors.divider),
+        ),
+        child: Text(label,
+            style: GoogleFonts.lato(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: selected ? Colors.white : AppColors.textPrimary)),
       ),
     );
   }

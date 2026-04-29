@@ -23,8 +23,10 @@ class WeatherService {
       }
 
       position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low,
-        timeLimit: const Duration(seconds: 5),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 5),
+        ),
       );
     } catch (e) {
       print('GPS trop long, on utilise Paris par défaut.');

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/clothing_item.dart';
+import '../theme/app_theme.dart';
+import 'network_img.dart';
 
 class ClothingCard extends StatelessWidget {
   final ClothingItem item;
@@ -9,21 +12,19 @@ class ClothingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    final colorText = item.colors.isNotEmpty ? item.colors.join(', ') : 'Aucunes couleurs';
+    final colorText = item.colors.isNotEmpty ? item.colors.join(' · ') : '—';
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1), 
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: AppColors.primary.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -31,23 +32,25 @@ class ClothingCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: item.imageUrl.isNotEmpty
-                    ? Image.network(
-                        item.imageUrl,
-                        fit: BoxFit.cover,
-                      )
-                    : Container(
-                        height: 150,
-                        color: const Color(0xFFF0F0F0),
-                        child: Icon(Icons.checkroom, color: Colors.grey[400], size: 40),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: NetworkImg(
+                    item.imageUrl,
+                    placeholder: Center(
+                      child: Icon(
+                        Icons.checkroom_outlined,
+                        color: AppColors.textSecondary.withValues(alpha: 0.4),
+                        size: 40,
                       ),
-              )
+                    ),
+                  ),
+                ),
+              ),
             ),
-            
             Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -55,19 +58,21 @@ class ClothingCard extends StatelessWidget {
                     item.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black87,
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
-                    '${item.mainCategory} · $colorText',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      letterSpacing: 0.5,
+                    colorText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.lato(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],

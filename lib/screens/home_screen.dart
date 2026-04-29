@@ -1,6 +1,7 @@
 import 'package:closet_buddy/screens/calendar_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
+import '../theme/app_theme.dart';
 import 'wardrobe_screen.dart';
 import 'outfit_screen.dart';
 import 'statistics_screen.dart';
@@ -29,12 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,26 +39,35 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: Colors.purple,
-        unselectedItemColor: Colors.grey,
+        onTap: (i) => setState(() => _selectedIndex = i),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: AppColors.surface,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
+        selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+        elevation: 8,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.checkroom),
+            icon: Icon(Icons.checkroom_outlined),
+            activeIcon: Icon(Icons.checkroom),
             label: 'Garde-robe',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.style),
+            icon: Icon(Icons.style_outlined),
+            activeIcon: Icon(Icons.style),
             label: 'Tenues',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
+            icon: Icon(Icons.insights_outlined),
+            activeIcon: Icon(Icons.insights),
             label: 'Stats',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
+            icon: Icon(Icons.calendar_today_outlined),
+            activeIcon: Icon(Icons.calendar_today),
             label: 'Calendrier',
-          )
+          ),
         ],
       ),
     );
