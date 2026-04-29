@@ -11,6 +11,7 @@ import '../theme/app_theme.dart';
 import 'add_clothing_screen.dart';
 import '../widgets/clothing_card.dart';
 import 'edit_clothing_screen.dart';
+import '../services/firestore_service.dart';
 
 class WardrobeScreen extends StatefulWidget {
   final User user;
@@ -29,6 +30,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   List<String> _subCategoryOptions = [];
 
   bool _showArchives = false;
+  bool _onlyShowFavorites = false;
 
   final List<String> _mainCategories = ['Hauts', 'Manteaux', 'Bas', 'Robes & Combinaisons', 'Chaussures', 'Accessoires'];
   final Map<String, List<String>> _subCategoriesMap = {
@@ -262,69 +264,79 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   }
 
   Widget _buildSecondaryFilters() {
-    final hasActiveFilter = _filterSubCategory != _allOption ||
-        _filterColor != _allOption ||
-        _filterOccasion != _allOption;
-
     return SizedBox(
       height: 40,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         children: [
-          if (_subCategoryOptions.isNotEmpty)
-            _FilterChipDropdown<String>(
-              label: _filterSubCategory == _allOption ? 'Sous-catégorie' : _filterSubCategory,
-              active: _filterSubCategory != _allOption,
-              items: [_allOption, ..._subCategoryOptions],
-              onSelected: (val) => setState(() => _filterSubCategory = val),
-              itemLabel: (v) => v,
+          GestureDetector(
+            onTap: () => setState(() => _onlyShowFavorites = !_onlyShowFavorites),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: _onlyShowFavorites ? Colors.red.withOpacity(0.1) : AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _onlyShowFavorites ? Colors.red : Colors.transparent,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _onlyShowFavorites ? Icons.favorite : Icons.favorite_border,
+                    size: 16,
+                    color: _onlyShowFavorites ? Colors.red : AppColors.textPrimary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Favoris',
+                    style: GoogleFonts.lato(
+                      fontSize: 12,
+                      fontWeight: _onlyShowFavorites ? FontWeight.w600 : FontWeight.w500,
+                      color: _onlyShowFavorites ? Colors.red : AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          if (_subCategoryOptions.isNotEmpty) const SizedBox(width: 8),
+          ),
+          const SizedBox(width: 8),
           _FilterChipDropdown<String>(
             label: _filterColor == _allOption ? 'Couleur' : _filterColor,
             active: _filterColor != _allOption,
             items: [_allOption, ..._colorOptions],
             onSelected: (val) => setState(() => _filterColor = val),
-            itemLabel: (v) => v,
-            itemLeading: (v) => v == _allOption
-                ? null
-                : Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: _colorMap[v],
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.divider),
-                    ),
-                  ),
+            itemLabel: (color) => color,
+            itemLeading: (color) {
+              if (color == _allOption) return null;
+              return Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: _colorMap[color] ?? Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black26),
+                ),
+              );
+            },
           ),
           const SizedBox(width: 8),
           _FilterChipDropdown<String>(
-            label: _filterOccasion == _allOption
-                ? 'Occasion'
-                : (_occasionDisplayMap[_filterOccasion] ?? _filterOccasion),
+            label: _filterOccasion == _allOption ? 'Occasion' : (_occasionDisplayMap[_filterOccasion] ?? _filterOccasion),
             active: _filterOccasion != _allOption,
             items: [_allOption, ..._occasionOptions],
             onSelected: (val) => setState(() => _filterOccasion = val),
-            itemLabel: (v) => _occasionDisplayMap[v] ?? v,
-          ),
-          if (hasActiveFilter) ...[
+            itemLabel: (occ) => _occasionDisplayMap[occ] ?? occ,
+          ), 
+          if (_subCategoryOptions.isNotEmpty) ...[
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => setState(() {
-                _filterSubCategory = _allOption;
-                _filterColor = _allOption;
-                _filterOccasion = _allOption;
-              }),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceAlt,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(Icons.close, size: 16, color: AppColors.textSecondary),
-              ),
+            _FilterChipDropdown<String>(
+              label: _filterSubCategory == _allOption ? 'Sous-catégorie' : _filterSubCategory,
+              active: _filterSubCategory != _allOption,
+              items: [_allOption, ..._subCategoryOptions],
+              onSelected: (val) => setState(() => _filterSubCategory = val),
+              itemLabel: (sub) => sub,
             ),
           ],
         ],
@@ -416,7 +428,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             final subOk = _filterSubCategory == _allOption || item.subCategory == _filterSubCategory;
             final colorOk = _filterColor == _allOption || item.colors.contains(_filterColor);
             final occasionOk = _filterOccasion == _allOption || item.occasions.contains(_filterOccasion);
-            return archiveCondition && mainOk && subOk && colorOk && occasionOk;
+            
+            final favoriteOk = !_onlyShowFavorites || item.isFavorite;
+
+            return archiveCondition && mainOk && subOk && colorOk && occasionOk && favoriteOk;
           }).toList();
 
           return Column(
@@ -439,20 +454,24 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                         ),
                         itemCount: filteredItems.length,
                         itemBuilder: (context, index) {
+                          final item = filteredItems[index];
                           return ClothingCard(
-                            item: filteredItems[index],
+                            item: item,
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => EditClothingScreen(
                                     user: widget.user,
-                                    clothingItem: filteredItems[index],
+                                    clothingItem: item,
                                     onUpdate: (_) => setState(() {}),
                                     onDelete: (_) => setState(() {}),
                                   ),
                                 ),
                               );
+                            },
+                            onFavoriteTap: () {
+                              FirestoreService().toggleFavorite(item.id, item.isFavorite);
                             },
                           );
                         },

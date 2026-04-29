@@ -10,6 +10,7 @@ class ClothingItem {
   final String season;
   final int wearCount;
   final bool isArchived;
+  final bool isFavorite;
 
   ClothingItem({
     required this.id,
@@ -23,6 +24,7 @@ class ClothingItem {
     this.season = 'Toutes saisons',
     this.wearCount = 0,
     this.isArchived = false,
+    this.isFavorite = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -37,6 +39,7 @@ class ClothingItem {
         'season': season,
         'wearCount': wearCount,
         'isArchived': isArchived,
+        'isFavorite': isFavorite,
       };
 
   factory ClothingItem.fromJson(String id, dynamic json) {
@@ -71,6 +74,7 @@ class ClothingItem {
       season: (data['season'] ?? 'Toutes saisons') as String,
       wearCount: (data['wearCount'] ?? 0) as int,
       isArchived: (data['isArchived'] ?? false) as bool,
+      isFavorite: (data['isFavorite'] ?? false) as bool,
     );
   }
 
@@ -85,6 +89,7 @@ class ClothingItem {
     String? season,
     int? wearCount,
     bool? isArchived,
+    bool? isFavorite,
   }) {
     return ClothingItem(
       id: id,
@@ -98,6 +103,7 @@ class ClothingItem {
       season: season ?? this.season,
       wearCount: wearCount ?? this.wearCount,
       isArchived: isArchived ?? this.isArchived,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 }

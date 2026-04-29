@@ -7,8 +7,9 @@ import 'network_img.dart';
 class ClothingCard extends StatelessWidget {
   final ClothingItem item;
   final VoidCallback? onTap;
+  final VoidCallback? onFavoriteTap;
 
-  const ClothingCard({super.key, required this.item, this.onTap});
+  const ClothingCard({super.key, required this.item, this.onTap, this.onFavoriteTap});
 
   @override
   Widget build(BuildContext context) {
@@ -34,18 +35,33 @@ class ClothingCard extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: NetworkImg(
-                    item.imageUrl,
-                    placeholder: Center(
-                      child: Icon(
-                        Icons.checkroom_outlined,
-                        color: AppColors.textSecondary.withValues(alpha: 0.4),
-                        size: 40,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: NetworkImg(
+                        item.imageUrl,
+                        placeholder: Center(
+                          child: Icon(
+                            Icons.checkroom_outlined,
+                            color: AppColors.textSecondary.withValues(alpha: 0.4),
+                            size: 40,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: IconButton(
+                        icon: Icon(
+                          item.isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: item.isFavorite ? Colors.red : AppColors.textSecondary.withValues(alpha: 0.4),
+                        ),
+                        onPressed: onFavoriteTap,
+                      ),
+                    )
+                  ],
                 ),
               ),
             ),

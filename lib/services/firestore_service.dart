@@ -150,4 +150,10 @@ class FirestoreService {
       'outfitIds': FieldValue.arrayRemove([outfitId])
     });
   }
+
+  Future<void> toggleFavorite(String docId, bool currentStatus) async {
+    await clothingCollection.doc(docId).update({
+      'isFavorite': !currentStatus,
+    });
+  }
 }
