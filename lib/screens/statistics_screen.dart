@@ -74,6 +74,8 @@ class StatisticsScreen extends StatelessWidget {
           final items = snapshot.data!;
           final categoryData = _calculateCategoryStats(items);
           final colorData = _calculateColorStats(items);
+          final activeItemsCount = items.where((item) => item.wearCount > 0).length;
+          final double activePercentage = items.isEmpty ? 0 : (activeItemsCount / items.length) * 100;
 
           final topItems = items.where((item) => item.wearCount > 0).toList();
           topItems.sort((a, b) => b.wearCount.compareTo(a.wearCount));
@@ -83,7 +85,7 @@ class StatisticsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSummaryCard(items.length),
+                _buildSummaryCard(items.length, activePercentage: activePercentage),
                 const SizedBox(height: 28),
                 _sectionTitle('Répartition par catégorie'),
                 const SizedBox(height: 16),
@@ -108,6 +110,48 @@ class StatisticsScreen extends StatelessWidget {
                   )
                 else
                   ...topItems.take(5).map((item) => _buildTopItem(item)),
+                const SizedBox(height: 28),
+                _sectionTitle('Aide au tri'),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceAlt,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        "Identifiez rapidement les pièces que vous portez le moins dans les 6 derniers mois pour décider de les donner, vendre ou recycler.",
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.lato(
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final candidates = await _firestoreService.getDeclutterCandidates(6);
+                          if (candidates.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Bravo! Aucune pièce à trier, vous portez tout!"),
+                                 backgroundColor: AppColors.primary,
+                              ),
+                            );
+                          } else {
+                            _showDeclutterDialog(context, candidates.first);
+                          }
+                        },
+                        icon: const Icon(Icons.auto_awesome, size: 18),
+                        label: Text("Découvrir les pièces à trier"),
+                      )
+                    ],
+                  ),
+                ),
               ],
             ),
           );
@@ -124,7 +168,7 @@ class StatisticsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard(int total) {
+  Widget _buildSummaryCard(int total, {required double activePercentage}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -139,7 +183,10 @@ class StatisticsScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Total de vêtements',
@@ -166,6 +213,31 @@ class StatisticsScreen extends StatelessWidget {
             ],
           ),
         ],
+      ),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text('Garde-robe active',
+              style: GoogleFonts.lato(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  letterSpacing: 0.5)),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text('${activePercentage.toStringAsFixed(0)}%',
+              style: GoogleFonts.playfairDisplay(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.accent)),
+          )
+        ],
+      ),
+        ]
       ),
     );
   }
@@ -381,6 +453,69 @@ class StatisticsScreen extends StatelessWidget {
           ],
         );
       }).toList(),
+    );
+  }
+
+  void _showDeclutterDialog(BuildContext context, ClothingItem item) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Pièce à trier',
+              style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.w600)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: NetworkImg(
+                    item.imageUrl,
+                    placeholder: const Icon(Icons.checkroom_outlined,
+                        color: AppColors.textSecondary),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(item.name,
+                  style: GoogleFonts.playfairDisplay(
+                      fontSize: 18, fontWeight: FontWeight.w600)),
+              Text(item.subCategory,
+                  style: GoogleFonts.lato(color: AppColors.textSecondary)),
+              const SizedBox(height: 12),
+              Text(
+                'Cette pièce n\'a pas été portée depuis 6 mois. Voulez-vous l\'archiver ?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(fontSize: 14),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Annuler',
+                  style: GoogleFonts.lato(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Archive the item
+                await _firestoreService.updateClothingItem(
+                    item.copyWith(isArchived: true));
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${item.name} archivée'),
+                    backgroundColor: AppColors.primary,
+                  ),
+                );
+              },
+              child: Text('Archiver'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

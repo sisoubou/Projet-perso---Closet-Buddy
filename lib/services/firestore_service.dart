@@ -8,8 +8,8 @@ import '../models/collection.dart';
 class FirestoreService {
   final FirebaseAuth auth = FirebaseAuth.instance;
 
-  final CollectionReference clothingCollection =
-      FirebaseFirestore.instance.collection('clothing_items');
+  final CollectionReference clothingCollection = FirebaseFirestore.instance
+      .collection('clothing_items');
 
   Future<void> addClothingItem(ClothingItem item, String userId) async {
     await clothingCollection.add({
@@ -43,17 +43,17 @@ class FirestoreService {
 
   Future<void> deleteClothing(String docId, String userId) async {
     final docRef = clothingCollection.doc(docId);
-    
+
     final docSnapshot = await docRef.get();
     if (docSnapshot.exists) {
-        final rawData = docSnapshot.data();
-        final data = (rawData is Map) ? rawData : {};
-        
-        if (data['userId'] == userId) {
-            await docRef.delete();
-        } else {
-            throw Exception('Unauthorized deletion attempt.');
-        }
+      final rawData = docSnapshot.data();
+      final data = (rawData is Map) ? rawData : {};
+
+      if (data['userId'] == userId) {
+        await docRef.delete();
+      } else {
+        throw Exception('Unauthorized deletion attempt.');
+      }
     }
   }
 
@@ -71,30 +71,32 @@ class FirestoreService {
     if (user == null) {
       return Stream.error('Utilisateur non authentifié');
     }
-    
+
     return clothingCollection
         .where('userId', isEqualTo: user.uid)
         .snapshots()
         .map((snapshot) {
           return snapshot.docs.map((doc) {
-            return ClothingItem.fromJson(doc.id, doc.data() as Map<String, dynamic>);
-          })
-          .toList();
-    });
+            return ClothingItem.fromJson(
+              doc.id,
+              doc.data() as Map<String, dynamic>,
+            );
+          }).toList();
+        });
   }
 
-  final CollectionReference outfitCollection =
-      FirebaseFirestore.instance.collection('outfits');
-  
+  final CollectionReference outfitCollection = FirebaseFirestore.instance
+      .collection('outfits');
+
   Future<void> saveOutfit(Outfit outfit, String userId) async {
     await outfitCollection.doc(outfit.id).set({
       ...outfit.toJson(),
-      'userId': userId, 
+      'userId': userId,
     });
   }
 
-  final CollectionReference calendarCollection =
-        FirebaseFirestore.instance.collection('calendar');
+  final CollectionReference calendarCollection = FirebaseFirestore.instance
+      .collection('calendar');
 
   Stream<List<Calendar>> getCalendarEntries() {
     final user = auth.currentUser;
@@ -103,9 +105,14 @@ class FirestoreService {
     return calendarCollection
         .where('userId', isEqualTo: user.uid)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Calendar.fromJson({...doc.data() as Map, 'id': doc.id}))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) =>
+                    Calendar.fromJson({...doc.data() as Map, 'id': doc.id}),
+              )
+              .toList(),
+        );
   }
 
   Future<void> deleteCalendarEntry(String id) async {
@@ -120,8 +127,8 @@ class FirestoreService {
     }
   }
 
-  final CollectionReference _collectionsRef =
-      FirebaseFirestore.instance.collection('collections');
+  final CollectionReference _collectionsRef = FirebaseFirestore.instance
+      .collection('collections');
 
   Stream<List<OutfitCollection>> getCollections() {
     final user = auth.currentUser;
@@ -130,30 +137,75 @@ class FirestoreService {
     return _collectionsRef
         .where('userId', isEqualTo: user.uid)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
-              return OutfitCollection.fromJson(doc.id, doc.data());
-            }).toList());
+        .map(
+          (snapshot) => snapshot.docs.map((doc) {
+            return OutfitCollection.fromJson(doc.id, doc.data());
+          }).toList(),
+        );
   }
 
   Future<void> createCollection(OutfitCollection collection) async {
     await _collectionsRef.doc(collection.id).set(collection.toJson());
   }
 
-  Future<void> addOutfitToCollection(String collectionId, String outfitId) async {
+  Future<void> addOutfitToCollection(
+    String collectionId,
+    String outfitId,
+  ) async {
     await _collectionsRef.doc(collectionId).update({
-      'outfitIds': FieldValue.arrayUnion([outfitId])
+      'outfitIds': FieldValue.arrayUnion([outfitId]),
     });
   }
 
-  Future<void> removeOutfitFromCollection(String collectionId, String outfitId) async {
+  Future<void> removeOutfitFromCollection(
+    String collectionId,
+    String outfitId,
+  ) async {
     await _collectionsRef.doc(collectionId).update({
-      'outfitIds': FieldValue.arrayRemove([outfitId])
+      'outfitIds': FieldValue.arrayRemove([outfitId]),
     });
   }
 
   Future<void> toggleFavorite(String docId, bool currentStatus) async {
-    await clothingCollection.doc(docId).update({
-      'isFavorite': !currentStatus,
-    });
+    await clothingCollection.doc(docId).update({'isFavorite': !currentStatus});
+  }
+
+  Future<List<ClothingItem>> getDeclutterCandidates(int monthsThreshold) async {
+    final user = auth.currentUser;
+    if (user == null) return [];
+
+    DateTime thresholdDate = DateTime.now().subtract(
+      Duration(days: monthsThreshold * 30),
+    );
+
+    final calendarSnapshot = await calendarCollection
+        .where('userId', isEqualTo: user.uid)
+        .where('date', isGreaterThan: thresholdDate.toIso8601String())
+        .get();
+
+    Set<String> wornItemIds = {};
+
+    for (var doc in calendarSnapshot.docs) {
+      final outfitId = (doc.data() as Map<String, dynamic>)['outfitId'];
+      final outfitDoc = await outfitCollection.doc(outfitId).get();
+      if (outfitDoc.exists) {
+        final items =
+            (outfitDoc.data() as Map<String, dynamic>?)?['items'] as List? ??
+            [];
+        for (var item in items) {
+          wornItemIds.add(item['id'].toString());
+        }
+      }
+    }
+
+    final allItems = await clothingCollection
+        .where('userId', isEqualTo: user.uid)
+        .where('isArchived', isEqualTo: false)
+        .get();
+
+    return allItems.docs
+        .map((doc) => ClothingItem.fromJson(doc.id, doc.data()))
+        .where((item) => !wornItemIds.contains(item.id))
+        .toList();
   }
 }
