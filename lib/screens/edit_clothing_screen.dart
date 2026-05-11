@@ -208,6 +208,7 @@ class EditClothingScreenState extends State<EditClothingScreen> {
                   _ImagePreview(
                     imageFile: _imageFile,
                     imageUrl: widget.clothingItem.imageUrl,
+                    itemId: widget.clothingItem.id,
                     onTap: _pickImage,
                   ),
                   const SizedBox(height: 24),
@@ -422,11 +423,13 @@ class EditClothingScreenState extends State<EditClothingScreen> {
 class _ImagePreview extends StatelessWidget {
   final File? imageFile;
   final String imageUrl;
+  final String itemId;
   final VoidCallback onTap;
 
   const _ImagePreview({
     required this.imageFile,
     required this.imageUrl,
+    required this.itemId,
     required this.onTap,
   });
 
@@ -436,19 +439,21 @@ class _ImagePreview extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: 240,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+      child: Hero(
+        tag: 'edit_clothing_$itemId',
+        child: Container(
+          height: 240,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.05),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: Stack(
@@ -510,6 +515,7 @@ class _ImagePreview extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

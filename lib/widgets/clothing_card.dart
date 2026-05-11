@@ -37,15 +37,18 @@ class ClothingCard extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 child: Stack(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
-                      child: NetworkImg(
-                        item.imageUrl,
-                        placeholder: Center(
-                          child: Icon(
-                            Icons.checkroom_outlined,
-                            color: AppColors.textSecondary.withValues(alpha: 0.4),
-                            size: 40,
+                    Hero(
+                      tag: 'clothing_${item.id}',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: NetworkImg(
+                          item.imageUrl,
+                          placeholder: Center(
+                            child: Icon(
+                              Icons.checkroom_outlined,
+                              color: AppColors.textSecondary.withValues(alpha: 0.4),
+                              size: 40,
+                            ),
                           ),
                         ),
                       ),

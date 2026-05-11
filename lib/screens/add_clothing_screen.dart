@@ -88,15 +88,9 @@ class AddClothingScreenState extends State<AddClothingScreen> {
     setState(() => _isSaving = true);
     String imageUrl = '';
 
-    if (_imageFile != null) {
-      final appCheckToken = await FirebaseAppCheck.instance.getToken(false);
-      debugPrint('AppCheck token present: ${appCheckToken != null}');
-
-      try {
-        final storage = FirebaseStorage.instanceFor(
-          bucket: 'gs://closetbuddy27.firebasestorage.app',
-        );
-        final storageRef = storage
+    try {
+      if (_imageFile != null) {
+        final storageRef = FirebaseStorage.instance
             .ref()
             .child('users')
             .child(currentUser.uid)
@@ -109,37 +103,21 @@ class AddClothingScreenState extends State<AddClothingScreen> {
         final metadata = SettableMetadata(contentType: 'image/jpeg');
         final TaskSnapshot snapshot = await storageRef.putFile(_imageFile!, metadata);
         imageUrl = await snapshot.ref.getDownloadURL();
-      } on FirebaseException catch (e) {
-        if (!mounted) return;
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur upload image : ${e.message ?? e.code}')),
-        );
-        return;
-      } catch (e) {
-        if (!mounted) return;
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Erreur lors de l'envoi de l'image.")),
-        );
-        return;
       }
-    }
 
-    final newItem = ClothingItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: currentUser.uid,
-      name: _name,
-      mainCategory: _mainCategory,
-      subCategory: _subCategory,
-      imageUrl: imageUrl,
-      colors: _selectedColors,
-      occasions: _selectedOccasions,
-      season: _selectedSeason,
-    );
+      final newItem = ClothingItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: currentUser.uid,
+        name: _name,
+        mainCategory: _mainCategory,
+        subCategory: _subCategory,
+        imageUrl: imageUrl,
+        colors: _selectedColors,
+        occasions: _selectedOccasions,
+        season: _selectedSeason,
+      );
 
-    try {
-      await FirebaseFirestore.instance.collection('clothing_items').add({
+      await FirebaseFirestore.instance.collection('clothing_items').doc(newItem.id).set({
         "id": newItem.id,
         "name": newItem.name,
         "mainCategory": newItem.mainCategory,
@@ -149,17 +127,28 @@ class AddClothingScreenState extends State<AddClothingScreen> {
         "userId": currentUser.uid,
         "occasions": newItem.occasions,
         "season": newItem.season,
+        "wearCount": 0,
+        "isArchived": false,
+        "isFavorite": false,
       });
 
       widget.onAdd(newItem);
       if (!mounted) return;
       Navigator.pop(context);
+
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erreur lors de l'enregistrement.")),
+        SnackBar(
+          content: Text("Erreur: ${e.toString()}"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 

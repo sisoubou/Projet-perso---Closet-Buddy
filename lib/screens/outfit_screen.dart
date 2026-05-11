@@ -8,6 +8,7 @@ import '../models/collection.dart';
 import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/network_img.dart';
+import '../widgets/empty_state_widget.dart';
 import 'outfit_creator_screen.dart';
 import 'collection_detail_screen.dart';
 
@@ -425,17 +426,10 @@ class _OutfitScreenState extends State<OutfitScreen> {
   }
 
   Widget _emptyState(String text, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: AppColors.textSecondary.withValues(alpha: 0.4)),
-          const SizedBox(height: 12),
-          Text(text,
-              style: GoogleFonts.playfairDisplay(
-                  fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
-        ],
-      ),
+    return EmptyStateWidget(
+      icon: icon,
+      title: text,
+      description: 'Commencez par créer une nouvelle tenue ou une collection.',
     );
   }
 

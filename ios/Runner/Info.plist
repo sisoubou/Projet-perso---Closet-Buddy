@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+    <string>Cette application a besoin d'accéder à vos photos pour ajouter des vêtements à votre garde-robe.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Cette application a besoin d'accéder à l'appareil photo pour prendre en photo vos vêtements.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Cette application a besoin de votre position pour vous donner des suggestions de tenues basées sur la météo locale.</string>
 </dict>
 </plist>

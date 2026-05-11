@@ -18,6 +18,8 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  runApp(const ClosetBuddyApp());
+
  if (!kIsWeb) {
     await FirebaseAppCheck.instance.activate(
       providerAndroid: kReleaseMode
