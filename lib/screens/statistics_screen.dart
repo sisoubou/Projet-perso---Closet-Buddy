@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -46,7 +48,7 @@ class StatisticsScreen extends StatelessWidget {
         stream: _firestoreService.getClothingItems(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return Center(child: CircularProgressIndicator(color: AppColors.primary));
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -134,20 +136,40 @@ class StatisticsScreen extends StatelessWidget {
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          final candidates = await _firestoreService.getDeclutterCandidates(6);
-                          if (candidates.isEmpty) {
+                          try {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Bravo! Aucune pièce à trier, vous portez tout!"),
-                                 backgroundColor: AppColors.primary,
+                              SnackBar(
+                                content: const Text("Analyse en cours..."),
+                                backgroundColor: AppColors.primary,
+                                duration: const Duration(seconds: 2),
                               ),
                             );
-                          } else {
-                            _showDeclutterDialog(context, candidates.first);
+
+                            final candidates = await _firestoreService.getDeclutterCandidates(6);
+                            if (candidates.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text("Bravo! Aucune pièce à trier, vous portez tout!"),
+                                  backgroundColor: AppColors.primary,
+                                ),
+                              );
+                            } else {
+                              _showDeclutterDialog(context, candidates.first);
+                            }
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Erreur lors de l'analyse: $e"),
+                                backgroundColor: Colors.redAccent,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                            print("Erreur complète : $e");
                           }
                         },
                         icon: const Icon(Icons.auto_awesome, size: 18),
-                        label: Text("Découvrir les pièces à trier"),
+                        label: const Text("Découvrir les pièces à trier"),
                       )
                     ],
                   ),
@@ -192,7 +214,7 @@ class StatisticsScreen extends StatelessWidget {
           Text('Total de vêtements',
               style: GoogleFonts.lato(
                   fontSize: 13,
-                  color: Colors.white.withValues(alpha: 0.85),
+                  color: Colors.white.withOpacity(0.85),
                   letterSpacing: 0.5)),
           const SizedBox(height: 8),
           Row(
@@ -208,7 +230,7 @@ class StatisticsScreen extends StatelessWidget {
                     style: GoogleFonts.playfairDisplay(
                         fontSize: 16,
                         fontStyle: FontStyle.italic,
-                        color: Colors.white.withValues(alpha: 0.85))),
+                        color: Colors.white.withOpacity(0.85))),
               ),
             ],
           ),
@@ -218,15 +240,15 @@ class StatisticsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text('Garde-robe active',
-              style: GoogleFonts.lato(
+                  style: GoogleFonts.lato(
                   fontSize: 13,
-                  color: Colors.white.withValues(alpha: 0.85),
+                  color: Colors.white.withOpacity(0.85),
                   letterSpacing: 0.5)),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text('${activePercentage.toStringAsFixed(0)}%',

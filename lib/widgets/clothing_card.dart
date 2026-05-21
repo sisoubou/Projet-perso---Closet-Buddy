@@ -43,6 +43,9 @@ class ClothingCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                         child: NetworkImg(
                           item.imageUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
                           placeholder: Center(
                             child: Icon(
                               Icons.checkroom_outlined,
